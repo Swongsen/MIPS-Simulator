@@ -5,6 +5,8 @@
 #include <string>
 #include <map>
 #include <math.h>
+#include <vector>
+#include <utility>
 
 
 using namespace std;
@@ -69,10 +71,28 @@ map<int,int> calculateDataValues(map<int,string> mem_data){
   return mem_value;
 }
 
+// Prints out the memory data map
 void printDataValues(map<int,int> mem_value){
   cout << "\n\nMemory address \t" << "Numerical Value" << endl;
   for(map<int,int>::iterator it = mem_value.begin(); it != mem_value.end(); it++){
     cout << it->first << "\t\t\t" << it->second << endl;
+  }
+}
+
+// Prints out the instruction simulation map
+void printInstruction_Simulation(map<string, vector<string>> instruction_simulation){
+  for(map<string ,vector<string>>::iterator it = instruction_simulation.begin(); it != instruction_simulation.end(); it++){
+    // printed value to make sure that on second iteration through vector list to print instruction, the memory address is not printed as well. Refreshes to false after each row
+    bool printed = false;
+    for(vector<string>::iterator itr = it->second.begin(); itr != it->second.end(); itr++){
+      cout << *itr << "\t";
+      if(printed == false){
+        cout << it->first << "\t";
+        printed = true;
+      }
+    }
+    cout << "\n";
+
   }
 }
 
@@ -86,6 +106,9 @@ int main(int args, char **argv){
   map<int, string> mem_instruction;
   map<int, string> mem_data;
   map<int, int> mem_value;
+  // map<memoryaddr, instruction>
+  map<string, vector<string>> instruction_simulation;
+
   // Base address to start at
   int address = 256;
   // String used to get the category categorybits
@@ -109,6 +132,7 @@ int main(int args, char **argv){
 
         if(breakhit == false)
           mem_instruction.insert(pair<int, string>(address, line));
+
         if(breakhit == true)
           mem_data.insert(pair<int,string>(address, line));
 
@@ -127,16 +151,33 @@ int main(int args, char **argv){
   // Store the data values into the memory->values map
   mem_value = calculateDataValues(mem_data);
 
-  cout << "MIPS Code \t\t\t" << "  Category \t" << "Opcode \t" << "Memory address" << endl;
+  //cout << "MIPS Code \t\t\t" << "  Category \t" << "Opcode \t" << "Memory address" << endl;
+  cout << "MIPS Code \t\t\t" << "  Memory \t" <<  "Instruction" << endl;
   for(map<int,string>::iterator it = mem_instruction.begin(); it != mem_instruction.end(); it++){
     // Makes a substring out of the line to find out if the instruction is in category 1 or category 2
     categorybits = it->second.substr(0,2);
     opcode = it->second.substr(2,4);
 
     if(categorybits == "01"){
-      // J Instruction
+      // J Instruction. Shifted right 2 on the instruction bits so shifted left twice to account for that.
       if(opcode == "0000"){
-        cout << "J";
+        int jumpaddr = 0;
+        string instruction = "";
+        //cout << "Jumping to memory: ";
+        for(int i = it->second.length() - 1; i > 5; i--){
+          if(it->second.at(i) == '1')
+            jumpaddr = jumpaddr + pow(2, it->second.length() - i - 1);
+        }
+        jumpaddr = jumpaddr << 2;
+        //cout << jumpaddr << "\t";
+        // Make string and append the jump address to it so i can store it for outputting
+        instruction = "J #";
+        instruction += to_string(jumpaddr);
+
+        // Create new map for the simulation output <instruction binary | stringified memory address -> instructions -> >
+        instruction_simulation.insert(pair<string, vector<string>>(to_string(it->first), vector<string>()));
+        instruction_simulation[to_string(it->first)].push_back(it->second);
+        instruction_simulation[to_string(it->first)].push_back(instruction);
       }
       // JR Instruction
       if(opcode == "0001"){
@@ -234,8 +275,9 @@ int main(int args, char **argv){
       }
     }
 
-    cout << it->second << "\t" << categorybits << "\t" << opcode << "\t" << it->first << endl;
+    //cout << it->second << "\t" << categorybits << "\t" << opcode << "\t" << it->first << endl;
   }
+  printInstruction_Simulation(instruction_simulation);
   printDataValues(mem_value);
   //cout << "\nData Values\t\t\t\t\t" << "Memory address \t" << endl;
 
