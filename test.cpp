@@ -96,6 +96,14 @@ void printInstruction_Simulation(map<string, vector<string>> instruction_simulat
   }
 }
 
+// References instruction_simulation to add instruction to it. Takes in mem_instruction iterator and instruction for key / values
+void addto_instruction_simulation(map<string, vector<string>> &instruction_simulation, map<int,string>::iterator it, string instruction){
+  // Create new map for the simulation output <instruction binary | stringified memory address -> instructions -> >
+  instruction_simulation.insert(pair<string, vector<string>>(to_string(it->first), vector<string>()));
+  instruction_simulation[to_string(it->first)].push_back(it->second);
+  instruction_simulation[to_string(it->first)].push_back(instruction);
+}
+
 int main(int args, char **argv){
 
   // #argv[1] should contain the input file
@@ -116,6 +124,7 @@ int main(int args, char **argv){
   // String used to get the opcode after categorybits
   string opcode;
   bool breakhit = false;
+  string instruction = "";
 
   if(file.good()){
     while(!file.eof()){
@@ -162,7 +171,7 @@ int main(int args, char **argv){
       // J Instruction. Shifted right 2 on the instruction bits so shifted left twice to account for that.
       if(opcode == "0000"){
         int jumpaddr = 0;
-        string instruction = "";
+        instruction = "";
         //cout << "Jumping to memory: ";
         for(int i = it->second.length() - 1; i > 5; i--){
           if(it->second.at(i) == '1')
@@ -174,10 +183,7 @@ int main(int args, char **argv){
         instruction = "J #";
         instruction += to_string(jumpaddr);
 
-        // Create new map for the simulation output <instruction binary | stringified memory address -> instructions -> >
-        instruction_simulation.insert(pair<string, vector<string>>(to_string(it->first), vector<string>()));
-        instruction_simulation[to_string(it->first)].push_back(it->second);
-        instruction_simulation[to_string(it->first)].push_back(instruction);
+        addto_instruction_simulation(instruction_simulation, it, instruction);
       }
       // JR Instruction
       if(opcode == "0001"){
@@ -193,11 +199,12 @@ int main(int args, char **argv){
       }
       // BGTZ Instruction
       if(opcode == "0100"){
-
+        
       }
-      // BREAK Instruction ** Prolly dont need this here? **
+      // BREAK Instruction **functionality other than denoting data is next??
       if(opcode == "0101"){
-
+        instruction = "BREAK";
+        addto_instruction_simulation(instruction_simulation, it, instruction);
       }
       // SW Instruction
       if(opcode == "0110"){
