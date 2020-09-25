@@ -11,6 +11,7 @@
 
 using namespace std;
 
+// Creates the memory to data map
 map<int,int> calculateDataValues(map<int,string> mem_data){
   int value;
   map<int,int> mem_value;
@@ -73,7 +74,7 @@ map<int,int> calculateDataValues(map<int,string> mem_data){
 
 // Prints out the memory data map
 void printDataValues(map<int,int> mem_value){
-  cout << "\n\nMemory address \t" << "Numerical Value" << endl;
+  cout << "\n\nMemory \t\t" << "Numerical Value" << endl;
   for(map<int,int>::iterator it = mem_value.begin(); it != mem_value.end(); it++){
     cout << it->first << "\t\t\t" << it->second << endl;
   }
@@ -92,7 +93,23 @@ void printInstruction_Simulation(map<string, vector<string>> instruction_simulat
       }
     }
     cout << "\n";
+  }
+}
 
+// Effectively same as print instruction simulation but it just writes it to text file instead.
+void write_Simulation(map<string, vector<string>> instruction_simulation){
+  ofstream simulation("simulation.txt");
+  for(map<string ,vector<string>>::iterator it = instruction_simulation.begin(); it != instruction_simulation.end(); it++){
+    // printed value to make sure that on second iteration through vector list to print instruction, the memory address is not printed as well. Refreshes to false after each row
+    bool printed = false;
+    for(vector<string>::iterator itr = it->second.begin(); itr != it->second.end(); itr++){
+      simulation << *itr << "\t";
+      if(printed == false){
+        simulation << it->first << "\t";
+        printed = true;
+      }
+    }
+    simulation << "\n";
   }
 }
 
@@ -166,12 +183,13 @@ int main(int args, char **argv){
     // Makes a substring out of the line to find out if the instruction is in category 1 or category 2
     categorybits = it->second.substr(0,2);
     opcode = it->second.substr(2,4);
-
+    instruction = "";
+    int rsReg = 0;
+    int rtReg = 0;
     if(categorybits == "01"){
       // J Instruction. Shifted right 2 on the instruction bits so shifted left twice to account for that.
       if(opcode == "0000"){
         int jumpaddr = 0;
-        instruction = "";
         //cout << "Jumping to memory: ";
         for(int i = it->second.length() - 1; i > 5; i--){
           if(it->second.at(i) == '1')
@@ -188,9 +206,42 @@ int main(int args, char **argv){
       // JR Instruction
       if(opcode == "0001"){
 
+        for(int i = it->second.length() - 22; i >= 6; i--){
+          if(it->second.at(i) == '1')
+            rsReg = rsReg + pow(2, it->second.length() - 22 - i);
+        }
+        instruction = "JR $R";
+        instruction += to_string(rsReg);
+        addto_instruction_simulation(instruction_simulation, it, instruction);
+        // Possibly add the rsReg as another string at the end of the instruction simulation to allow stoi(rsReg) to figure out which register its trying to jump to. May need to change couple functions
       }
       // BEQ Instruction
       if(opcode == "0010"){
+        int offset = 0;
+        // Offset bits are from 31-16
+        for(int i = it->second.length()-1; i >= 16; i--){
+          if(it->second.at(i) == '1'){
+            offset = offset + pow(2,it->second.length() - i - 1);
+          }
+        }
+        offset = offset << 2;
+        // RT Register are from bits 15-11
+        for(int i = 15; i >= 11; i--){
+          if(it->second.at(i) == '1'){
+            rtReg = rtReg + pow(2, 15 - i);
+          }
+        }
+        // RS Register are from bits 10-6
+        for(int i = 10; i >= 6; i--){
+          if(it->second.at(i) == '1'){
+            rsReg = rsReg + pow(2, 10 - i);
+          }
+        }
+
+        // Combine everything into string for adding to instruction simulation 
+        instruction = "BEQ R" + to_string(rsReg) + ", R" + to_string(rtReg) + ", #" + to_string(offset);
+        addto_instruction_simulation(instruction_simulation, it, instruction);
+
 
       }
       // BLTZ Instruction
@@ -199,7 +250,7 @@ int main(int args, char **argv){
       }
       // BGTZ Instruction
       if(opcode == "0100"){
-        
+
       }
       // BREAK Instruction **functionality other than denoting data is next??
       if(opcode == "0101"){
@@ -286,6 +337,7 @@ int main(int args, char **argv){
   }
   printInstruction_Simulation(instruction_simulation);
   printDataValues(mem_value);
+  write_Simulation(instruction_simulation);
   //cout << "\nData Values\t\t\t\t\t" << "Memory address \t" << endl;
 
 
