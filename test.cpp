@@ -181,11 +181,16 @@ int main(int args, char **argv){
   cout << "MIPS Code \t\t\t" << "  Memory \t" <<  "Instruction" << endl;
   for(map<int,string>::iterator it = mem_instruction.begin(); it != mem_instruction.end(); it++){
     // Makes a substring out of the line to find out if the instruction is in category 1 or category 2
+    // Start at position 0 - 2 length
     categorybits = it->second.substr(0,2);
+    // Start at position 2 - 4 length
     opcode = it->second.substr(2,4);
     instruction = "";
     int rsReg = 0;
     int rtReg = 0;
+    int rdReg = 0;
+    int immediate = 0;
+
     if(categorybits == "01"){
       // J Instruction. Shifted right 2 on the instruction bits so shifted left twice to account for that.
       if(opcode == "0000"){
@@ -238,11 +243,9 @@ int main(int args, char **argv){
           }
         }
 
-        // Combine everything into string for adding to instruction simulation 
+        // Combine everything into string for adding to instruction simulation
         instruction = "BEQ R" + to_string(rsReg) + ", R" + to_string(rtReg) + ", #" + to_string(offset);
         addto_instruction_simulation(instruction_simulation, it, instruction);
-
-
       }
       // BLTZ Instruction
       if(opcode == "0011"){
@@ -285,7 +288,24 @@ int main(int args, char **argv){
     else if(categorybits == "11"){
       // ADD Instruction
       if(opcode == "0000"){
+        for(int i = it->second.length() - 12; i >= 16; i--){
+          if(it->second.at(i) == '1'){
+            rdReg = rdReg + pow(2, 20 - i);
+          }
+        }
+        for(int i = 15; i >= 11; i--){
+          if(it->second.at(i) == '1'){
+            rdReg = rdReg + pow(2, 15 - i);
+          }
+        }
+        for(int i = 10; i >= 6; i--){
+          if(it->second.at(i) == '1'){
+            rdReg = rdReg + pow(2, 10 - i);
+          }
+        }
 
+        instruction = "ADD R" + to_string(rdReg) + ", R" + to_string(rsReg) + ", R" + to_string(rtReg);
+        addto_instruction_simulation(instruction_simulation, it, instruction);
       }
       // SUB Instruction
       if(opcode == "0001"){
@@ -317,6 +337,26 @@ int main(int args, char **argv){
       }
       // ADDI Instruction
       if(opcode == "1000"){
+        for(int i = it->second.length() - 1; i >= 16; i--){
+          if(it->second.at(i) == '1'){
+            immediate = immediate + pow(2, it->second.length() - i - 1);
+          }
+        }
+
+        for(int i = 15; i >= 11; i--){
+          if(it->second.at(i) == '1'){
+            rtReg = rtReg + pow(2, 15 - i);
+          }
+        }
+
+        for(int i = 10; i >= 6; i--){
+          if(it->second.at(i) == '1'){
+            rsReg = rsReg + pow(2, 10 - i);
+          }
+        }
+
+        instruction = "ADDI R" + to_string(rtReg) + ", R" + to_string(rsReg) + ", #" + to_string(immediate);
+        addto_instruction_simulation(instruction_simulation, it, instruction);
 
       }
       // ANDI Instruction
