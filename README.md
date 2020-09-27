@@ -1,5 +1,5 @@
 # MIPS Simulator / Disassembler
-Computer Architecture Project CDA4102/5155__
+Computer Architecture Project CDA4102/5155 <br/>
 Not exactly compatible with MIPS as the instruction set has been modified to fit assignment.
  
 1. Load a specified MIPS text file and generate the assembly code equivalent to the input file (disassembler). 
