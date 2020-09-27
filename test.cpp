@@ -190,6 +190,10 @@ int main(int args, char **argv){
     int rtReg = 0;
     int rdReg = 0;
     int immediate = 0;
+    int sa = 0; // shift amount
+    int shftedRegAmt = 0; // how much to shift register by
+    int offset = 0;
+    int base = 0; // for LW? SW
 
     if(categorybits == "01"){
       // J Instruction. Shifted right 2 on the instruction bits so shifted left twice to account for that.
@@ -267,9 +271,48 @@ int main(int args, char **argv){
       // LW Instruction
       if(opcode == "0111"){
 
+        for(int i = it->second.length() - 1; i >= 16; i--){
+          if(it->second.at(i) == '1'){
+            offset = offset + pow(2, it->second.length() - i - 1);
+          }
+        }
+        for(int i = 15; i >= 11; i--){
+          if(it->second.at(i) == '1'){
+            rtReg = rtReg + pow(2, 15-i);
+          }
+        }
+        for(int i = 10; i >= 6; i--){
+          if(it->second.at(i) == '1'){
+            base = base + pow(2, 10 - i);
+          }
+        }
+        // For the actual word to load, take the offset 340 to base R0 and every increment of 4 is the next data register.
+        instruction = "LW R" + to_string(rtReg) + ", " + to_string(offset) + "(R" + to_string(base) + ")";
+        addto_instruction_simulation(instruction_simulation, it, instruction);
+
       }
-      // SLL Instruction
+      // SLL Instruction  //31-26
       if(opcode == "1000"){
+        for(int i = it->second.length() - 7; i >= 21; i--){
+          if(it->second.at(i) == '1')
+            sa = sa + pow(2, 25 - i);
+        }
+        for(int i = 20; i >= 16; i--){
+          if(it->second.at(i) == '1')
+            rdReg = rdReg + pow(2, 20 - i);
+        }
+        for(int i = 15; i >= 11; i--){
+          if(it->second.at(i) == '1')
+            rtReg = rtReg + pow(2, 15 - i);
+        }
+        // Keep the new value of rdReg in another variable
+        shftedRegAmt = rtReg;
+        // For each shift amount, shift left bits 1.
+        for(int i = sa; i > 0; i--){
+          shftedRegAmt = shftedRegAmt << 1;
+        }
+        instruction = "SLL R" + to_string(rdReg) + ", R" + to_string(rtReg) + ", #" + to_string(sa);
+        addto_instruction_simulation(instruction_simulation, it, instruction);
 
       }
       // SRL Instruction
@@ -337,18 +380,20 @@ int main(int args, char **argv){
       }
       // ADDI Instruction
       if(opcode == "1000"){
+        // Calculate the immediate value (16 bits)
         for(int i = it->second.length() - 1; i >= 16; i--){
           if(it->second.at(i) == '1'){
             immediate = immediate + pow(2, it->second.length() - i - 1);
           }
         }
-
+        // Calculate the rt register (5 bits)
         for(int i = 15; i >= 11; i--){
           if(it->second.at(i) == '1'){
             rtReg = rtReg + pow(2, 15 - i);
           }
         }
 
+        // Calculate the rs register (5 bits)
         for(int i = 10; i >= 6; i--){
           if(it->second.at(i) == '1'){
             rsReg = rsReg + pow(2, 10 - i);
