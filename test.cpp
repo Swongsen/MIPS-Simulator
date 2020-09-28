@@ -172,7 +172,7 @@ int main(int args, char **argv){
     }
   }
   else
-    cout << "Error with file" << endl;
+    return 0;
 
   // Store the data values into the memory->values map
   mem_value = calculateDataValues(mem_data);
@@ -356,7 +356,7 @@ int main(int args, char **argv){
       }
       // MUL Instruction
       if(opcode == "0010"){
-
+        // todo #1
       }
       // AND Instruction
       if(opcode == "0011"){
@@ -411,10 +411,46 @@ int main(int args, char **argv){
       // ORI Instruction
       if(opcode == "1010"){
 
+        for(int i = it->second.length() - 1; i >= 16; i--){
+          if(it->second.at(i) == '1'){
+            immediate = immediate + pow(2, it->second.length() - i - 1);
+          }
+        }
+        for(int i = 15; i >= 11; i--){
+          if(it->second.at(i) == '1'){
+            rtReg = rtReg + pow(2, 15-i);
+          }
+        }
+        for(int i = 10; i >= 6; i--){
+          if(it->second.at(i) == '1'){
+            rsReg = rsReg + pow(2, 10 - i);
+          }
+        }
+
+        instruction = "ORI R" + to_string(rtReg) + ", R" + to_string(rsReg) + ", #" + to_string(immediate);
+        addto_instruction_simulation(instruction_simulation, it, instruction);
       }
       // XORI Instruction
       if(opcode == "1011"){
 
+        for(int i = it->second.length() - 1; i >= 16; i--){
+          if(it->second.at(i) == '1'){
+            immediate = immediate + pow(2, it->second.length() - i - 1);
+          }
+        }
+        for(int i = 15; i >= 11; i--){
+          if(it->second.at(i) == '1'){
+            rtReg = rtReg + pow(2, 15-i);
+          }
+        }
+        for(int i = 10; i >= 6; i--){
+          if(it->second.at(i) == '1'){
+            rsReg = rsReg + pow(2, 10 - i);
+          }
+        }
+
+        instruction = "XORI R" + to_string(rtReg) + ", R" + to_string(rsReg) + ", #" + to_string(immediate);
+        addto_instruction_simulation(instruction_simulation, it, instruction);
       }
     }
 
