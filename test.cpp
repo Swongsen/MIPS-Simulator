@@ -331,19 +331,19 @@ int main(int args, char **argv){
     else if(categorybits == "11"){
       // ADD Instruction
       if(opcode == "0000"){
-        for(int i = it->second.length() - 12; i >= 16; i--){
+        for(int i = 20; i >= 16; i--){
           if(it->second.at(i) == '1'){
             rdReg = rdReg + pow(2, 20 - i);
           }
         }
         for(int i = 15; i >= 11; i--){
           if(it->second.at(i) == '1'){
-            rdReg = rdReg + pow(2, 15 - i);
+            rtReg = rtReg + pow(2, 15 - i);
           }
         }
         for(int i = 10; i >= 6; i--){
           if(it->second.at(i) == '1'){
-            rdReg = rdReg + pow(2, 10 - i);
+            rsReg = rsReg + pow(2, 10 - i);
           }
         }
 
@@ -352,31 +352,157 @@ int main(int args, char **argv){
       }
       // SUB Instruction
       if(opcode == "0001"){
+        for(int i = 20; i >= 16; i--){
+          if(it->second.at(i) == '1'){
+            rdReg = rdReg + pow(2, 20 - i);
+          }
+        }
+        for(int i = 15; i >= 11; i--){
+          if(it->second.at(i) == '1'){
+            rtReg = rtReg + pow(2, 15 - i);
+          }
+        }
 
+        for(int i = 10; i >= 6; i--){
+          if(it->second.at(i) == '1'){
+            rsReg = rsReg + pow(2, 10 - i);
+          }
+        }
+
+        instruction = "SUB R" + to_string(rdReg) + ", R" + to_string(rsReg) + ", R" + to_string(rtReg);
+        addto_instruction_simulation(instruction_simulation, it, instruction);
       }
       // MUL Instruction
       if(opcode == "0010"){
-        // todo #1
+        for(int i = 20; i >= 16; i--){
+          if(it->second.at(i) == '1'){
+            rdReg = rdReg + pow(2, 20 - i);
+          }
+        }
+        for(int i = 15; i >= 11; i--){
+          if(it->second.at(i) == '1'){
+            rtReg = rtReg + pow(2, 15 - i);
+          }
+        }
+
+        for(int i = 10; i >= 6; i--){
+          if(it->second.at(i) == '1'){
+            rsReg = rsReg + pow(2, 10 - i);
+          }
+        }
+
+        instruction = "MUL R" + to_string(rdReg) + ", R" + to_string(rsReg) + ", R" + to_string(rtReg);
+        addto_instruction_simulation(instruction_simulation, it, instruction);
       }
       // AND Instruction
       if(opcode == "0011"){
+        for(int i = 20; i >= 16; i--){
+          if(it->second.at(i) == '1'){
+            rdReg = rdReg + pow(2, 20 - i);
+          }
+        }
+        for(int i = 15; i >= 11; i--){
+          if(it->second.at(i) == '1'){
+            rtReg = rtReg + pow(2, 15 - i);
+          }
+        }
 
+        for(int i = 10; i >= 6; i--){
+          if(it->second.at(i) == '1'){
+            rsReg = rsReg + pow(2, 10 - i);
+          }
+        }
+
+        instruction = "AND R" + to_string(rdReg) + ", R" + to_string(rsReg) + ", R" + to_string(rtReg);
+        addto_instruction_simulation(instruction_simulation, it, instruction);
       }
       // OR Instruction
       if(opcode == "0100"){
+        for(int i = 20; i >= 16; i--){
+          if(it->second.at(i) == '1'){
+            rdReg = rdReg + pow(2, 20 - i);
+          }
+        }
+        for(int i = 15; i >= 11; i--){
+          if(it->second.at(i) == '1'){
+            rtReg = rtReg + pow(2, 15 - i);
+          }
+        }
 
+        for(int i = 10; i >= 6; i--){
+          if(it->second.at(i) == '1'){
+            rsReg = rsReg + pow(2, 10 - i);
+          }
+        }
+
+        instruction = "OR R" + to_string(rdReg) + ", R" + to_string(rsReg) + ", R" + to_string(rtReg);
+        addto_instruction_simulation(instruction_simulation, it, instruction);
       }
       // XOR Instruction
       if(opcode == "0101"){
+        for(int i = 20; i >= 16; i--){
+          if(it->second.at(i) == '1'){
+            rdReg = rdReg + pow(2, 20 - i);
+          }
+        }
+        for(int i = 15; i >= 11; i--){
+          if(it->second.at(i) == '1'){
+            rtReg = rtReg + pow(2, 15 - i);
+          }
+        }
 
+        for(int i = 10; i >= 6; i--){
+          if(it->second.at(i) == '1'){
+            rsReg = rsReg + pow(2, 10 - i);
+          }
+        }
+
+        instruction = "XOR R" + to_string(rdReg) + ", R" + to_string(rsReg) + ", R" + to_string(rtReg);
+        addto_instruction_simulation(instruction_simulation, it, instruction);
       }
       // NOR Instruction
       if(opcode == "0110"){
+        for(int i = 20; i >= 16; i--){
+          if(it->second.at(i) == '1'){
+            rdReg = rdReg + pow(2, 20 - i);
+          }
+        }
+        for(int i = 15; i >= 11; i--){
+          if(it->second.at(i) == '1'){
+            rtReg = rtReg + pow(2, 15 - i);
+          }
+        }
 
+        for(int i = 10; i >= 6; i--){
+          if(it->second.at(i) == '1'){
+            rsReg = rsReg + pow(2, 10 - i);
+          }
+        }
+
+        instruction = "NOR R" + to_string(rdReg) + ", R" + to_string(rsReg) + ", R" + to_string(rtReg);
+        addto_instruction_simulation(instruction_simulation, it, instruction);
       }
       // SLT Instruction
       if(opcode == "0111"){
+        for(int i = 20; i >= 16; i--){
+          if(it->second.at(i) == '1'){
+            rdReg = rdReg + pow(2, 20 - i);
+          }
+        }
+        for(int i = 15; i >= 11; i--){
+          if(it->second.at(i) == '1'){
+            rtReg = rtReg + pow(2, 15 - i);
+          }
+        }
 
+        for(int i = 10; i >= 6; i--){
+          if(it->second.at(i) == '1'){
+            rsReg = rsReg + pow(2, 10 - i);
+          }
+        }
+
+        instruction = "SLT R" + to_string(rdReg) + ", R" + to_string(rsReg) + ", R" + to_string(rtReg);
+        addto_instruction_simulation(instruction_simulation, it, instruction);
       }
       // ADDI Instruction
       if(opcode == "1000"){
@@ -406,7 +532,24 @@ int main(int args, char **argv){
       }
       // ANDI Instruction
       if(opcode == "1001"){
+        for(int i = it->second.length() - 1; i >= 16; i--){
+          if(it->second.at(i) == '1'){
+            immediate = immediate + pow(2, it->second.length() - i - 1);
+          }
+        }
+        for(int i = 15; i >= 11; i--){
+          if(it->second.at(i) == '1'){
+            rtReg = rtReg + pow(2, 15-i);
+          }
+        }
+        for(int i = 10; i >= 6; i--){
+          if(it->second.at(i) == '1'){
+            rsReg = rsReg + pow(2, 10 - i);
+          }
+        }
 
+        instruction = "ANDI R" + to_string(rtReg) + ", R" + to_string(rsReg) + ", #" + to_string(immediate);
+        addto_instruction_simulation(instruction_simulation, it, instruction);
       }
       // ORI Instruction
       if(opcode == "1010"){
