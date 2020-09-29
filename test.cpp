@@ -81,8 +81,8 @@ void printDataValues(map<int,int> mem_value){
 }
 
 // Prints out the instruction simulation map
-void printInstruction_Simulation(map<string, vector<string>> instruction_simulation){
-  for(map<string ,vector<string>>::iterator it = instruction_simulation.begin(); it != instruction_simulation.end(); it++){
+void printinstruction_disassembly(map<string, vector<string>> instruction_disassembly){
+  for(map<string ,vector<string>>::iterator it = instruction_disassembly.begin(); it != instruction_disassembly.end(); it++){
     // printed value to make sure that on second iteration through vector list to print instruction, the memory address is not printed as well. Refreshes to false after each row
     bool printed = false;
     for(vector<string>::iterator itr = it->second.begin(); itr != it->second.end(); itr++){
@@ -97,28 +97,28 @@ void printInstruction_Simulation(map<string, vector<string>> instruction_simulat
 }
 
 // Effectively same as print instruction simulation but it just writes it to text file instead.
-void write_Simulation(map<string, vector<string>> instruction_simulation){
-  ofstream simulation("simulation.txt");
-  for(map<string ,vector<string>>::iterator it = instruction_simulation.begin(); it != instruction_simulation.end(); it++){
+void write_Disassembly(map<string, vector<string>> instruction_disassembly){
+  ofstream disassembly("disassembly.txt");
+  for(map<string ,vector<string>>::iterator it = instruction_disassembly.begin(); it != instruction_disassembly.end(); it++){
     // printed value to make sure that on second iteration through vector list to print instruction, the memory address is not printed as well. Refreshes to false after each row
     bool printed = false;
     for(vector<string>::iterator itr = it->second.begin(); itr != it->second.end(); itr++){
-      simulation << *itr << "\t";
+      disassembly << *itr << "\t";
       if(printed == false){
-        simulation << it->first << "\t";
+        disassembly << it->first << "\t";
         printed = true;
       }
     }
-    simulation << "\n";
+    disassembly << "\n";
   }
 }
 
-// References instruction_simulation to add instruction to it. Takes in mem_instruction iterator and instruction for key / values
-void addto_instruction_simulation(map<string, vector<string>> &instruction_simulation, map<int,string>::iterator it, string instruction){
+// References instruction_disassembly to add instruction to it. Takes in mem_instruction iterator and instruction for key / values
+void addto_instruction_disassembly(map<string, vector<string>> &instruction_disassembly, map<int,string>::iterator it, string instruction){
   // Create new map for the simulation output <instruction binary | stringified memory address -> instructions -> >
-  instruction_simulation.insert(pair<string, vector<string>>(to_string(it->first), vector<string>()));
-  instruction_simulation[to_string(it->first)].push_back(it->second);
-  instruction_simulation[to_string(it->first)].push_back(instruction);
+  instruction_disassembly.insert(pair<string, vector<string>>(to_string(it->first), vector<string>()));
+  instruction_disassembly[to_string(it->first)].push_back(it->second);
+  instruction_disassembly[to_string(it->first)].push_back(instruction);
 }
 
 int main(int args, char **argv){
@@ -132,7 +132,7 @@ int main(int args, char **argv){
   map<int, string> mem_data;
   map<int, int> mem_value;
   // map<memoryaddr, instruction>
-  map<string, vector<string>> instruction_simulation;
+  map<string, vector<string>> instruction_disassembly;
 
   // Base address to start at
   int address = 256;
@@ -210,7 +210,7 @@ int main(int args, char **argv){
         instruction = "J #";
         instruction += to_string(jumpaddr);
 
-        addto_instruction_simulation(instruction_simulation, it, instruction);
+        addto_instruction_disassembly(instruction_disassembly, it, instruction);
       }
       // JR Instruction
       if(opcode == "0001"){
@@ -219,9 +219,9 @@ int main(int args, char **argv){
           if(it->second.at(i) == '1')
             rsReg = rsReg + pow(2, it->second.length() - 22 - i);
         }
-        instruction = "JR $R";
+        instruction = "JR R";
         instruction += to_string(rsReg);
-        addto_instruction_simulation(instruction_simulation, it, instruction);
+        addto_instruction_disassembly(instruction_disassembly, it, instruction);
         // Possibly add the rsReg as another string at the end of the instruction simulation to allow stoi(rsReg) to figure out which register its trying to jump to. May need to change couple functions
       }
       // BEQ Instruction
@@ -249,23 +249,67 @@ int main(int args, char **argv){
 
         // Combine everything into string for adding to instruction simulation
         instruction = "BEQ R" + to_string(rsReg) + ", R" + to_string(rtReg) + ", #" + to_string(offset);
-        addto_instruction_simulation(instruction_simulation, it, instruction);
+        addto_instruction_disassembly(instruction_disassembly, it, instruction);
       }
       // BLTZ Instruction
       if(opcode == "0011"){
-
+        for(int i = it->second.length() - 1; i >= 16; i--){
+          if(it->second.at(i) == '1'){
+            offset = offset + pow(2, it->second.length() - 1 - i);
+          }
+        }
+        for(int i = 10; i >= 6; i--){
+          if(it->second.at(i) == '1'){
+            rsReg = rsReg + pow(2, 10 - i);
+          }
+        }
+        // offset is shifted left 2 bits
+        offset = offset << 2;
+        instruction = "BLTZ R" + to_string(rsReg) + ", #" + to_string(offset);
+        addto_instruction_disassembly(instruction_disassembly, it, instruction);
       }
       // BGTZ Instruction
       if(opcode == "0100"){
-
+        for(int i = it->second.length() - 1; i >= 16; i--){
+          if(it->second.at(i) == '1'){
+            offset = offset + pow(2, it->second.length() - 1 - i);
+          }
+        }
+        for(int i = 10; i >= 6; i--){
+          if(it->second.at(i) == '1'){
+            rsReg = rsReg + pow(2, 10 - i);
+          }
+        }
+        // offset is shifted left 2 bits
+        offset = offset << 2;
+        instruction = "BGTZ R" + to_string(rsReg) + ", #" + to_string(offset);
+        addto_instruction_disassembly(instruction_disassembly, it, instruction);
       }
       // BREAK Instruction **functionality other than denoting data is next??
       if(opcode == "0101"){
         instruction = "BREAK";
-        addto_instruction_simulation(instruction_simulation, it, instruction);
+        addto_instruction_disassembly(instruction_disassembly, it, instruction);
       }
       // SW Instruction
       if(opcode == "0110"){
+        for(int i = it->second.length() - 1; i >= 16; i--){
+          if(it->second.at(i) == '1'){
+            offset = offset + pow(2, it->second.length() - i - 1);
+          }
+        }
+        for(int i = 15; i >= 11; i--){
+          if(it->second.at(i) == '1'){
+            rtReg = rtReg + pow(2, 15-i);
+          }
+        }
+        for(int i = 10; i >= 6; i--){
+          if(it->second.at(i) == '1'){
+            base = base + pow(2, 10 - i);
+          }
+        }
+        // For the actual word to load, take the offset 340 to base R0 and every increment of 4 is the next data register.
+        instruction = "SW R" + to_string(rtReg) + ", " + to_string(offset) + "(R" + to_string(base) + ")";
+        addto_instruction_disassembly(instruction_disassembly, it, instruction);
 
       }
       // LW Instruction
@@ -288,7 +332,7 @@ int main(int args, char **argv){
         }
         // For the actual word to load, take the offset 340 to base R0 and every increment of 4 is the next data register.
         instruction = "LW R" + to_string(rtReg) + ", " + to_string(offset) + "(R" + to_string(base) + ")";
-        addto_instruction_simulation(instruction_simulation, it, instruction);
+        addto_instruction_disassembly(instruction_disassembly, it, instruction);
 
       }
       // SLL Instruction  //31-26
@@ -312,23 +356,65 @@ int main(int args, char **argv){
           shftedRegAmt = shftedRegAmt << 1;
         }
         instruction = "SLL R" + to_string(rdReg) + ", R" + to_string(rtReg) + ", #" + to_string(sa);
-        addto_instruction_simulation(instruction_simulation, it, instruction);
+        addto_instruction_disassembly(instruction_disassembly, it, instruction);
 
       }
       // SRL Instruction
       if(opcode == "1001"){
-
+        for(int i = it->second.length() - 7; i >= 21; i--){
+          if(it->second.at(i) == '1')
+            sa = sa + pow(2, 25 - i);
+        }
+        for(int i = 20; i >= 16; i--){
+          if(it->second.at(i) == '1')
+            rdReg = rdReg + pow(2, 20 - i);
+        }
+        for(int i = 15; i >= 11; i--){
+          if(it->second.at(i) == '1')
+            rtReg = rtReg + pow(2, 15 - i);
+        }
+        // Keep the new value of rdReg in another variable
+        shftedRegAmt = rtReg;
+        // For each shift amount, shift left bits 1.
+        for(int i = sa; i > 0; i--){
+          shftedRegAmt = shftedRegAmt << 1;
+        }
+        instruction = "SRL R" + to_string(rdReg) + ", R" + to_string(rtReg) + ", #" + to_string(sa);
+        addto_instruction_disassembly(instruction_disassembly, it, instruction);
       }
       // SRA Instruction
       if(opcode == "1010"){
 
+        for(int i = it->second.length() - 7; i >= 21; i--){
+          if(it->second.at(i) == '1')
+            sa = sa + pow(2, 25 - i);
+        }
+        for(int i = 20; i >= 16; i--){
+          if(it->second.at(i) == '1')
+            rdReg = rdReg + pow(2, 20 - i);
+        }
+        for(int i = 15; i >= 11; i--){
+          if(it->second.at(i) == '1')
+            rtReg = rtReg + pow(2, 15 - i);
+        }
+        // Keep the new value of rdReg in another variable
+        shftedRegAmt = rtReg;
+        // For each shift amount, shift left bits 1.
+        for(int i = sa; i > 0; i--){
+          shftedRegAmt = shftedRegAmt << 1;
+        }
+        instruction = "SRA R" + to_string(rdReg) + ", R" + to_string(rtReg) + ", #" + to_string(sa);
+        addto_instruction_disassembly(instruction_disassembly, it, instruction);
       }
       // NOP Instruction
       if(opcode == "1011"){
-
+        instruction = "NOP";
+        addto_instruction_disassembly(instruction_disassembly, it, instruction);
       }
     }
     else if(categorybits == "11"){
+      // Use struct and create function to reduce redundancy if there is extra time
+
       // ADD Instruction
       if(opcode == "0000"){
         for(int i = 20; i >= 16; i--){
@@ -348,7 +434,7 @@ int main(int args, char **argv){
         }
 
         instruction = "ADD R" + to_string(rdReg) + ", R" + to_string(rsReg) + ", R" + to_string(rtReg);
-        addto_instruction_simulation(instruction_simulation, it, instruction);
+        addto_instruction_disassembly(instruction_disassembly, it, instruction);
       }
       // SUB Instruction
       if(opcode == "0001"){
@@ -370,7 +456,7 @@ int main(int args, char **argv){
         }
 
         instruction = "SUB R" + to_string(rdReg) + ", R" + to_string(rsReg) + ", R" + to_string(rtReg);
-        addto_instruction_simulation(instruction_simulation, it, instruction);
+        addto_instruction_disassembly(instruction_disassembly, it, instruction);
       }
       // MUL Instruction
       if(opcode == "0010"){
@@ -392,7 +478,7 @@ int main(int args, char **argv){
         }
 
         instruction = "MUL R" + to_string(rdReg) + ", R" + to_string(rsReg) + ", R" + to_string(rtReg);
-        addto_instruction_simulation(instruction_simulation, it, instruction);
+        addto_instruction_disassembly(instruction_disassembly, it, instruction);
       }
       // AND Instruction
       if(opcode == "0011"){
@@ -414,7 +500,7 @@ int main(int args, char **argv){
         }
 
         instruction = "AND R" + to_string(rdReg) + ", R" + to_string(rsReg) + ", R" + to_string(rtReg);
-        addto_instruction_simulation(instruction_simulation, it, instruction);
+        addto_instruction_disassembly(instruction_disassembly, it, instruction);
       }
       // OR Instruction
       if(opcode == "0100"){
@@ -436,7 +522,7 @@ int main(int args, char **argv){
         }
 
         instruction = "OR R" + to_string(rdReg) + ", R" + to_string(rsReg) + ", R" + to_string(rtReg);
-        addto_instruction_simulation(instruction_simulation, it, instruction);
+        addto_instruction_disassembly(instruction_disassembly, it, instruction);
       }
       // XOR Instruction
       if(opcode == "0101"){
@@ -458,7 +544,7 @@ int main(int args, char **argv){
         }
 
         instruction = "XOR R" + to_string(rdReg) + ", R" + to_string(rsReg) + ", R" + to_string(rtReg);
-        addto_instruction_simulation(instruction_simulation, it, instruction);
+        addto_instruction_disassembly(instruction_disassembly, it, instruction);
       }
       // NOR Instruction
       if(opcode == "0110"){
@@ -480,7 +566,7 @@ int main(int args, char **argv){
         }
 
         instruction = "NOR R" + to_string(rdReg) + ", R" + to_string(rsReg) + ", R" + to_string(rtReg);
-        addto_instruction_simulation(instruction_simulation, it, instruction);
+        addto_instruction_disassembly(instruction_disassembly, it, instruction);
       }
       // SLT Instruction
       if(opcode == "0111"){
@@ -502,7 +588,7 @@ int main(int args, char **argv){
         }
 
         instruction = "SLT R" + to_string(rdReg) + ", R" + to_string(rsReg) + ", R" + to_string(rtReg);
-        addto_instruction_simulation(instruction_simulation, it, instruction);
+        addto_instruction_disassembly(instruction_disassembly, it, instruction);
       }
       // ADDI Instruction
       if(opcode == "1000"){
@@ -527,7 +613,7 @@ int main(int args, char **argv){
         }
 
         instruction = "ADDI R" + to_string(rtReg) + ", R" + to_string(rsReg) + ", #" + to_string(immediate);
-        addto_instruction_simulation(instruction_simulation, it, instruction);
+        addto_instruction_disassembly(instruction_disassembly, it, instruction);
 
       }
       // ANDI Instruction
@@ -549,7 +635,7 @@ int main(int args, char **argv){
         }
 
         instruction = "ANDI R" + to_string(rtReg) + ", R" + to_string(rsReg) + ", #" + to_string(immediate);
-        addto_instruction_simulation(instruction_simulation, it, instruction);
+        addto_instruction_disassembly(instruction_disassembly, it, instruction);
       }
       // ORI Instruction
       if(opcode == "1010"){
@@ -571,7 +657,7 @@ int main(int args, char **argv){
         }
 
         instruction = "ORI R" + to_string(rtReg) + ", R" + to_string(rsReg) + ", #" + to_string(immediate);
-        addto_instruction_simulation(instruction_simulation, it, instruction);
+        addto_instruction_disassembly(instruction_disassembly, it, instruction);
       }
       // XORI Instruction
       if(opcode == "1011"){
@@ -593,15 +679,15 @@ int main(int args, char **argv){
         }
 
         instruction = "XORI R" + to_string(rtReg) + ", R" + to_string(rsReg) + ", #" + to_string(immediate);
-        addto_instruction_simulation(instruction_simulation, it, instruction);
+        addto_instruction_disassembly(instruction_disassembly, it, instruction);
       }
     }
 
     //cout << it->second << "\t" << categorybits << "\t" << opcode << "\t" << it->first << endl;
   }
-  printInstruction_Simulation(instruction_simulation);
+  printinstruction_disassembly(instruction_disassembly);
   printDataValues(mem_value);
-  write_Simulation(instruction_simulation);
+  write_Disassembly(instruction_disassembly);
   //cout << "\nData Values\t\t\t\t\t" << "Memory address \t" << endl;
 
 
