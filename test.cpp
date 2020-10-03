@@ -134,11 +134,17 @@ void write_Simulation(map<string, vector<string>> instruction_simulation, map<in
 */
 
 // References instruction_disassembly to add instruction to it. Takes in mem_instruction iterator and instruction for key / values
-void addto_instruction_disassembly(map<string, vector<string>> &instruction_disassembly, map<int,string>::iterator &it, string instruction){
+void addto_instruction_disassembly(map<string, vector<string>> &instruction_disassembly, map<int,string>::iterator it, string instruction){
   // Create new map for the simulation output <stringified memory address | instruction binary -> instructions -> >
   instruction_disassembly.insert(pair<string, vector<string>>(to_string(it->first), vector<string>()));
   instruction_disassembly[to_string(it->first)].push_back(it->second);
   instruction_disassembly[to_string(it->first)].push_back(instruction);
+}
+
+void addto_cycles_simulation(map<int, vector<string>> &cycle_instructions, int cycle, map<int, string>::iterator it, string instruction){
+  cycle_instructions.insert(pair<int, vector<string>>(cycle, vector<string>()));
+  cycle_instructions[cycle].push_back(to_string(it->first));
+  cycle_instructions[cycle].push_back(instruction);
 }
 
 void print_DataReg(map<int,int> mem_value){
@@ -267,9 +273,7 @@ int main(int args, char **argv){
             addto_instruction_disassembly(instruction_disassembly, it, instruction);
           else if(iteration == 2){
             //cout << "heree\n";
-            cycle_instructions.insert(pair<int, vector<string>>(cycle, vector<string>()));
-            cycle_instructions[cycle].push_back(to_string(it->first));
-            cycle_instructions[cycle].push_back(instruction);
+            addto_cycles_simulation(cycle_instructions, cycle, it, instruction);
             // finds the iterator that has the jump addr as the key.
             it = mem_instruction.find(jumpaddr);
             //cout << "it: " << it->first << "\t" << it->second << "\n";
@@ -295,9 +299,7 @@ int main(int args, char **argv){
                 x = stoi(register_values.at(rsReg));
               }
             }
-            cycle_instructions.insert(pair<int, vector<string>>(cycle, vector<string>()));
-            cycle_instructions[cycle].push_back(to_string(it->first));
-            cycle_instructions[cycle].push_back(instruction);
+            addto_cycles_simulation(cycle_instructions, cycle, it, instruction);
             // make the iterator start where x's value (memory?) is
             it = mem_instruction.find(x);
             cycle++;
@@ -333,10 +335,7 @@ int main(int args, char **argv){
           else if(iteration == 2){
             //cout << "reg1. :" << register_values.find(rsReg) -> second << "\n";
             //cout << "reg2. :" << register_values.find(rtReg) -> second << "\n";
-
-            cycle_instructions.insert(pair<int, vector<string>>(cycle, vector<string>()));
-            cycle_instructions[cycle].push_back(to_string(it->first));
-            cycle_instructions[cycle].push_back(instruction);
+            addto_cycles_simulation(cycle_instructions, cycle, it, instruction);
             if(register_values.find(rsReg)->second == register_values.find(rtReg)->second){
               //cout << "MEMORY ADDRESS:" << (it->first + offset + 4) << "\n";
               it = mem_instruction.find(it->first + offset + 4);
@@ -359,7 +358,15 @@ int main(int args, char **argv){
           // offset is shifted left 2 bits
           offset = offset << 2;
           instruction = "BLTZ R" + to_string(rsReg) + ", #" + to_string(offset);
-          addto_instruction_disassembly(instruction_disassembly, it, instruction);
+          if(iteration == 1)
+            addto_instruction_disassembly(instruction_disassembly, it, instruction);
+          else if(iteration == 2){
+            addto_cycles_simulation(cycle_instructions, cycle, it, instruction);
+            if(stoi(register_values.find(rsReg)->second) < 0){
+              it = mem_instruction.find((it->first + offset + 4));
+            }
+            cycle++;
+          }
         }
         // BGTZ Instruction
         if(opcode == "0100"){
@@ -376,12 +383,24 @@ int main(int args, char **argv){
           // offset is shifted left 2 bits
           offset = offset << 2;
           instruction = "BGTZ R" + to_string(rsReg) + ", #" + to_string(offset);
-          addto_instruction_disassembly(instruction_disassembly, it, instruction);
+          if(iteration == 1)
+            addto_instruction_disassembly(instruction_disassembly, it, instruction);
+          else if(iteration == 2){
+            addto_cycles_simulation(cycle_instructions, cycle, it, instruction);
+            if(stoi(register_values.find(rsReg)->second) > 0){
+              it = mem_instruction.find((it->first + offset + 4));
+            }
+            cycle++;
+          }
         }
         // BREAK Instruction **functionality other than denoting data is next??
         if(opcode == "0101"){
           instruction = "BREAK";
-          addto_instruction_disassembly(instruction_disassembly, it, instruction);
+          if(iteration == 1)
+            addto_instruction_disassembly(instruction_disassembly, it, instruction);
+          else if(iteration == 2)
+            addto_cycles_simulation(cycle_instructions, cycle, it, instruction);
+          cycle++;
         }
         // SW Instruction
         if(opcode == "0110"){
@@ -402,7 +421,21 @@ int main(int args, char **argv){
           }
           // For the actual word to load, take the offset 340 to base R0 and every increment of 4 is the next data register.
           instruction = "SW R" + to_string(rtReg) + ", " + to_string(offset) + "(R" + to_string(base) + ")";
-          addto_instruction_disassembly(instruction_disassembly, it, instruction);
+          if(iteration == 1)
+            addto_instruction_disassembly(instruction_disassembly, it, instruction);
+          else if(iteration == 2){
+            addto_cycles_simulation(cycle_instructions, cycle, it, instruction);
+            int addr = (offset + it->first + stoi(register_values.find(base)->second));
+            for(map<int,int>::iterator dataItr = mem_value.begin(); dataItr != mem_value.end(); dataItr++){
+              if(addr == dataItr->first){
+                if(mem_value.count(dataItr->first) != 0)
+                  mem_value.erase(dataItr->first);
+                mem_value.insert(pair<int,int>(addr, stoi(register_values.find(rtReg)->second)));
+              }
+            }
+
+            cycle++;
+          }
 
         }
         // LW Instruction
