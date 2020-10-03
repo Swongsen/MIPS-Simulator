@@ -80,8 +80,9 @@ void printDataValues(map<int,int> mem_value){
   }
 }
 
-// Prints out the instruction simulation map
+// Prints out the instruction disassembly map
 void printinstruction_disassembly(map<string, vector<string>> instruction_disassembly){
+  int xx = 0;
   for(map<string ,vector<string>>::iterator it = instruction_disassembly.begin(); it != instruction_disassembly.end(); it++){
     // printed value to make sure that on second iteration through vector list to print instruction, the memory address is not printed as well. Refreshes to false after each row
     bool printed = false;
@@ -133,7 +134,7 @@ void write_Simulation(map<string, vector<string>> instruction_simulation, map<in
 */
 
 // References instruction_disassembly to add instruction to it. Takes in mem_instruction iterator and instruction for key / values
-void addto_instruction_disassembly(map<string, vector<string>> &instruction_disassembly, map<int,string>::iterator it, string instruction){
+void addto_instruction_disassembly(map<string, vector<string>> &instruction_disassembly, map<int,string>::iterator &it, string instruction){
   // Create new map for the simulation output <stringified memory address | instruction binary -> instructions -> >
   instruction_disassembly.insert(pair<string, vector<string>>(to_string(it->first), vector<string>()));
   instruction_disassembly[to_string(it->first)].push_back(it->second);
@@ -162,6 +163,7 @@ void create_registers(map<int, string> &register_values){
   }
 }
 
+
 int main(int args, char **argv){
 
   // #argv[1] should contain the input file
@@ -175,6 +177,7 @@ int main(int args, char **argv){
   // map<memoryaddr, instruction>
   map<string, vector<string>> instruction_disassembly;
   map<int, string> register_values;
+  map<int, vector<string>> cycle_instructions;
 
   // Base address to start at
   int address = 256;
@@ -225,9 +228,9 @@ int main(int args, char **argv){
   //cout << "MIPS Code \t\t\t" << "  Category \t" << "Opcode \t" << "Memory address" << endl;
   cout << "MIPS Code \t\t\t" << "  Memory \t" <<  "Instruction" << endl;
   int iteration = 1;
-  while(iteration < 2){
+  while(iteration <= 2){
+    int cycle = 1;
     for(map<int,string>::iterator it = mem_instruction.begin(); it != mem_instruction.end(); it++){
-
       // Makes a substring out of the line to find out if the instruction is in category 1 or category 2
       // Start at position 0 - 2 length
       categorybits = it->second.substr(0,2);
@@ -242,7 +245,10 @@ int main(int args, char **argv){
       int shftedRegAmt = 0; // how much to shift register by
       int offset = 0;
       int base = 0; // for LW? SW
-
+      int x = 0;
+      int y = 0;
+      int z = 0;
+      //cout << it->first << "\t" << it->second << " ::\n";
       if(categorybits == "01"){
         // J Instruction. Shifted right 2 on the instruction bits so shifted left twice to account for that.
         if(opcode == "0000"){
@@ -257,14 +263,18 @@ int main(int args, char **argv){
           // Make string and append the jump address to it so i can store it for outputting
           instruction = "J #";
           instruction += to_string(jumpaddr);
-          if(iteration = 1)
+          if(iteration == 1)
             addto_instruction_disassembly(instruction_disassembly, it, instruction);
-          else if(iteration = 2){
+          else if(iteration == 2){
+            //cout << "heree\n";
+            cycle_instructions.insert(pair<int, vector<string>>(cycle, vector<string>()));
+            cycle_instructions[cycle].push_back(to_string(it->first));
+            cycle_instructions[cycle].push_back(instruction);
+            // finds the iterator that has the jump addr as the key.
             it = mem_instruction.find(jumpaddr);
-            break;
-            int j = 0;
-            cout << it->first << "\t" << j;
-            j++;
+            //cout << "it: " << it->first << "\t" << it->second << "\n";
+            cycle++;
+
           }
         }
         // JR Instruction
@@ -276,8 +286,22 @@ int main(int args, char **argv){
           }
           instruction = "JR R";
           instruction += to_string(rsReg);
-          addto_instruction_disassembly(instruction_disassembly, it, instruction);
-          // Possibly add the rsReg as another string at the end of the instruction simulation to allow stoi(rsReg) to figure out which register its trying to jump to. May need to change couple functions
+          if(iteration == 1)
+            addto_instruction_disassembly(instruction_disassembly, it, instruction);
+          else if(iteration == 2){
+            for(map<int,string>::iterator regItr = register_values.begin(); regItr != register_values.end(); regItr++){
+              if(regItr->first == rsReg){
+                // Finds the register value stored at the register and stores it to x
+                x = stoi(register_values.at(rsReg));
+              }
+            }
+            cycle_instructions.insert(pair<int, vector<string>>(cycle, vector<string>()));
+            cycle_instructions[cycle].push_back(to_string(it->first));
+            cycle_instructions[cycle].push_back(instruction);
+            // make the iterator start where x's value (memory?) is
+            it = mem_instruction.find(x);
+            cycle++;
+          }
         }
         // BEQ Instruction
         if(opcode == "0010"){
@@ -304,7 +328,21 @@ int main(int args, char **argv){
 
           // Combine everything into string for adding to instruction simulation
           instruction = "BEQ R" + to_string(rsReg) + ", R" + to_string(rtReg) + ", #" + to_string(offset);
-          addto_instruction_disassembly(instruction_disassembly, it, instruction);
+          if(iteration == 1)
+            addto_instruction_disassembly(instruction_disassembly, it, instruction);
+          else if(iteration == 2){
+            //cout << "reg1. :" << register_values.find(rsReg) -> second << "\n";
+            //cout << "reg2. :" << register_values.find(rtReg) -> second << "\n";
+
+            cycle_instructions.insert(pair<int, vector<string>>(cycle, vector<string>()));
+            cycle_instructions[cycle].push_back(to_string(it->first));
+            cycle_instructions[cycle].push_back(instruction);
+            if(register_values.find(rsReg)->second == register_values.find(rtReg)->second){
+              //cout << "MEMORY ADDRESS:" << (it->first + offset + 4) << "\n";
+              it = mem_instruction.find(it->first + offset + 4);
+            }
+            cycle++;
+          }
         }
         // BLTZ Instruction
         if(opcode == "0011"){
@@ -488,16 +526,24 @@ int main(int args, char **argv){
             }
           }
           instruction = "ADD R" + to_string(rdReg) + ", R" + to_string(rsReg) + ", R" + to_string(rtReg);
-          addto_instruction_disassembly(instruction_disassembly, it, instruction);
+          if(iteration == 1)
+            addto_instruction_disassembly(instruction_disassembly, it, instruction);
+          else if(iteration == 2){
+            for(map<int,string>::iterator regItr = register_values.begin(); regItr != register_values.end(); regItr++){
+              if(regItr->first == rdReg){
+                x = stoi(register_values.at(rsReg));
+                y = stoi(register_values.at(rtReg));
+                // result of the two registers
+                z = x + y;
 
-          for(map<int,string>::iterator regItr = register_values.begin(); regItr != register_values.end(); regItr++){
-            if(regItr->first == rdReg){
-              int x = stoi(register_values.at(rsReg));
-              int y = stoi(register_values.at(rtReg));
-              int z = x + y;
-
-              register_values.at(rdReg) = to_string(z);
+                register_values.at(rdReg) = to_string(z);
+              }
             }
+            cycle_instructions.insert(pair<int, vector<string>>(cycle, vector<string>()));
+            cycle_instructions[cycle].push_back(to_string(it->first));
+            cycle_instructions[cycle].push_back(instruction);
+            cycle++;
+
           }
         }
         // SUB Instruction
@@ -677,7 +723,8 @@ int main(int args, char **argv){
           }
 
           instruction = "ADDI R" + to_string(rtReg) + ", R" + to_string(rsReg) + ", #" + to_string(immediate);
-          addto_instruction_disassembly(instruction_disassembly, it, instruction);
+          if(iteration == 1)
+            addto_instruction_disassembly(instruction_disassembly, it, instruction);
 
         }
         // ANDI Instruction
@@ -748,6 +795,7 @@ int main(int args, char **argv){
       }
 
       //cout << it->second << "\t" << categorybits << "\t" << opcode << "\t" << it->first << endl;
+      cycle++;
     }
     // The iterations are first iteration for the disassembly to be finished and then second iteration for actual register work
     iteration++;
@@ -762,11 +810,12 @@ int main(int args, char **argv){
 
   //register_values.insert(pair<int, string>(0, "10"));
   //register_values.at(0) = "fifty";    // This works as valid way of inserting register values
+  cout << cycle_instructions.size();
   int regNum = 0;
-  for(map<string, vector<string>>::iterator it = instruction_disassembly.begin(); it != instruction_disassembly.end(); it++){
+  for(map<int, vector<string>>::iterator cycleItr = cycle_instructions.begin(); cycleItr != cycle_instructions.end(); cycleItr++){
     regNum = 0;
     cout << "-------\n";
-    cout << "Cycle: " << cycle << "\t" << it->first << "\t" << it->second.at(1) << "\n\n";
+    cout << "Cycle: " << cycle << "\t" << cycleItr->first << "\t" << cycleItr->second.at(0) << "\t" << cycleItr->second.at(1) << "\n\n";
     cout << "Registers";
     for(map<int,string>::iterator regItr = register_values.begin(); regItr != register_values.end(); regItr++){
       // For printing out the register row names
@@ -787,7 +836,6 @@ int main(int args, char **argv){
     cout << "\n";
     print_DataReg(mem_value);
   }
-
 
   //write_Simulation(instruction_simulation);
   //cout << "\nData Values\t\t\t\t\t" << "Memory address \t" << endl;
