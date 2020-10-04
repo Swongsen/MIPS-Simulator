@@ -10,6 +10,7 @@
 
 
 using namespace std;
+void printDataValues(map<int,int> mem_value);
 
 // Creates the memory to data map
 map<int,int> calculateDataValues(map<int,string> mem_data){
@@ -81,7 +82,7 @@ void printDataValues(map<int,int> mem_value){
 }
 
 // Prints out the instruction disassembly map
-void printinstruction_disassembly(map<string, vector<string>> instruction_disassembly){
+void print_Disassembly(map<string, vector<string>> instruction_disassembly){
   int xx = 0;
   for(map<string ,vector<string>>::iterator it = instruction_disassembly.begin(); it != instruction_disassembly.end(); it++){
     // printed value to make sure that on second iteration through vector list to print instruction, the memory address is not printed as well. Refreshes to false after each row
@@ -122,17 +123,72 @@ void write_Disassembly(map<string, vector<string>> instruction_disassembly, map<
   }
 }
 
-/*
-void write_Simulation(map<string, vector<string>> instruction_simulation, map<int, string> mem_instruction){
-  ofstream simulation("simulation.txt");
-  int cycle = 0;
-  for(map<int,string>::iterator it = mem_instruction.begin(); it != mem_instruction.end(); it++){
-    cout << "--------------------\n";
-    cout << "Cycle: " << cycle << "\t" << it->first;
+void print_Simulation(map<int,int> mem_value, int regNum, int cycle, map<int,string> register_values, map<string, vector<string>> instruction_disassembly, map<int,string>::iterator it, string instruction){
+  cout << "-------\n";
+  // Prints each cycle with format |cycle # | memory address | instruction in english | .......... last part got from instruction dissasembly finding the 2nd vector element at that memory address
+  cout << "Cycle: " << cycle << "\t" << it->first << "\t" << instruction_disassembly.find(to_string(it->first))->second.at(1) << "\n\n";
+  cout << "Registers";
+  for(map<int,string>::iterator regItr = register_values.begin(); regItr != register_values.end(); regItr++){
+    // For printing out the register row names
+    if(regNum % 8 == 0){
+      if(regNum == 0)
+        cout << "\nR00:\t";
+      else if(regNum == 8)
+        cout << "\nR08:\t";
+      else
+        cout << "\nR" << regNum << ":\t";
+    }
+    cout << regItr->second << "\t";
+    regNum++;
   }
+  cout << "\n";
+  cout << "Data";
+  int dataCounter = 0;
+  for(map<int, int>::iterator it = mem_value.begin(); it != mem_value.end(); it++){
+    if(dataCounter == 0){
+      cout << "\n" << it->first << ":\t" << it->second << "\t";
+      dataCounter = 8;
+    }
+    else
+      cout << it->second << "\t";
+    dataCounter--;
+  }
+  cout << "\n";
 }
-*/
 
+// Have to pass in the output file to allow changes every iteration as opposed to writing all at once like the disassembly
+void write_Simulation(ofstream &simulation, map<int,int> mem_value, int regNum, int cycle, map<int,string> register_values, map<string, vector<string>> instruction_disassembly, map<int,string>::iterator it, string instruction){
+  simulation << "-------\n";
+  // Prints each cycle with format |cycle # | memory address | instruction in english | .......... last part got from instruction dissasembly finding the 2nd vector element at that memory address
+  simulation << "Cycle: " << cycle << "\t" << it->first << "\t" << instruction_disassembly.find(to_string(it->first))->second.at(1) << "\n\n";
+  simulation << "Registers";
+  for(map<int,string>::iterator regItr = register_values.begin(); regItr != register_values.end(); regItr++){
+    // For printing out the register row names
+    if(regNum % 8 == 0){
+      if(regNum == 0)
+        simulation << "\nR00:\t";
+      else if(regNum == 8)
+        simulation << "\nR08:\t";
+      else
+        simulation << "\nR" << regNum << ":\t";
+    }
+    simulation << regItr->second << "\t";
+    regNum++;
+  }
+  simulation << "\n";
+  simulation << "Data";
+  int dataCounter = 0;
+  for(map<int, int>::iterator it = mem_value.begin(); it != mem_value.end(); it++){
+    if(dataCounter == 0){
+      simulation << "\n" << it->first << ":\t" << it->second << "\t";
+      dataCounter = 8;
+    }
+    else
+      simulation << it->second << "\t";
+    dataCounter--;
+  }
+  simulation << "\n";
+}
 // References instruction_disassembly to add instruction to it. Takes in mem_instruction iterator and instruction for key / values
 void addto_instruction_disassembly(map<string, vector<string>> &instruction_disassembly, map<int,string>::iterator it, string instruction){
   // Create new map for the simulation output <stringified memory address | instruction binary -> instructions -> >
@@ -174,6 +230,8 @@ int main(int args, char **argv){
 
   // #argv[1] should contain the input file
   fstream file;
+  // open up output channel
+  ofstream simulation("simulation.txt");
   // Open file and set direction to be input
   file.open(argv[1], ios::in);
   int linenum = 0;
@@ -235,7 +293,7 @@ int main(int args, char **argv){
   cout << "MIPS Code \t\t\t" << "  Memory \t" <<  "Instruction" << endl;
   int iteration = 1;
   while(iteration <= 2){
-    int cycle = 1;
+    int cycle = 0;
     for(map<int,string>::iterator it = mem_instruction.begin(); it != mem_instruction.end(); it++){
       // Makes a substring out of the line to find out if the instruction is in category 1 or category 2
       // Start at position 0 - 2 length
@@ -254,7 +312,9 @@ int main(int args, char **argv){
       int x = 0;
       int y = 0;
       int z = 0;
-      //cout << it->first << "\t" << it->second << " ::\n";
+      map<int, string>::iterator jumper;
+
+      //cout << "\n" << it->first << "\t" << it->second << " ::";
       if(categorybits == "01"){
         // J Instruction. Shifted right 2 on the instruction bits so shifted left twice to account for that.
         if(opcode == "0000"){
@@ -272,12 +332,11 @@ int main(int args, char **argv){
           if(iteration == 1)
             addto_instruction_disassembly(instruction_disassembly, it, instruction);
           else if(iteration == 2){
-            //cout << "heree\n";
+            //  cout << "jumpaddr:" << jumpaddr;
             addto_cycles_simulation(cycle_instructions, cycle, it, instruction);
             // finds the iterator that has the jump addr as the key.
-            it = mem_instruction.find(jumpaddr);
+            jumper = mem_instruction.find(jumpaddr-4);
             //cout << "it: " << it->first << "\t" << it->second << "\n";
-            cycle++;
 
           }
         }
@@ -335,12 +394,15 @@ int main(int args, char **argv){
           else if(iteration == 2){
             //cout << "reg1. :" << register_values.find(rsReg) -> second << "\n";
             //cout << "reg2. :" << register_values.find(rtReg) -> second << "\n";
+            //cout << "rs:" << rsReg << ", " << stoi(register_values.find(rsReg)->second) << "\n";
             addto_cycles_simulation(cycle_instructions, cycle, it, instruction);
             if(register_values.find(rsReg)->second == register_values.find(rtReg)->second){
               //cout << "MEMORY ADDRESS:" << (it->first + offset + 4) << "\n";
-              it = mem_instruction.find(it->first + offset + 4);
+              jumper = mem_instruction.find(it->first + offset);
             }
-            cycle++;
+            else{
+              jumper = it;
+            }
           }
         }
         // BLTZ Instruction
@@ -362,10 +424,13 @@ int main(int args, char **argv){
             addto_instruction_disassembly(instruction_disassembly, it, instruction);
           else if(iteration == 2){
             addto_cycles_simulation(cycle_instructions, cycle, it, instruction);
+            //cout << "rs:" << rsReg << ", " << stoi(register_values.find(rsReg)->second) << "\n";
             if(stoi(register_values.find(rsReg)->second) < 0){
-              it = mem_instruction.find((it->first + offset + 4));
+              jumper = mem_instruction.find((it->first + offset));
             }
-            cycle++;
+            else{
+              jumper = it;
+            }
           }
         }
         // BGTZ Instruction
@@ -387,10 +452,13 @@ int main(int args, char **argv){
             addto_instruction_disassembly(instruction_disassembly, it, instruction);
           else if(iteration == 2){
             addto_cycles_simulation(cycle_instructions, cycle, it, instruction);
+            //cout << "rs:" << rsReg << ", " << stoi(register_values.find(rsReg)->second) << "\n";
             if(stoi(register_values.find(rsReg)->second) > 0){
-              it = mem_instruction.find((it->first + offset + 4));
+              jumper = mem_instruction.find((it->first + offset));
             }
-            cycle++;
+            else{
+              jumper = it;
+            }
           }
         }
         // BREAK Instruction **functionality other than denoting data is next??
@@ -398,9 +466,10 @@ int main(int args, char **argv){
           instruction = "BREAK";
           if(iteration == 1)
             addto_instruction_disassembly(instruction_disassembly, it, instruction);
-          else if(iteration == 2)
+          else if(iteration == 2){
             addto_cycles_simulation(cycle_instructions, cycle, it, instruction);
-          cycle++;
+            cycle++;
+          }
         }
         // SW Instruction
         if(opcode == "0110"){
@@ -425,18 +494,16 @@ int main(int args, char **argv){
             addto_instruction_disassembly(instruction_disassembly, it, instruction);
           else if(iteration == 2){
             addto_cycles_simulation(cycle_instructions, cycle, it, instruction);
-            int addr = (offset + it->first + stoi(register_values.find(base)->second));
+            int addr = (offset + stoi(register_values.find(base)->second));
             for(map<int,int>::iterator dataItr = mem_value.begin(); dataItr != mem_value.end(); dataItr++){
               if(addr == dataItr->first){
-                if(mem_value.count(dataItr->first) != 0)
-                  mem_value.erase(dataItr->first);
-                mem_value.insert(pair<int,int>(addr, stoi(register_values.find(rtReg)->second)));
+                //cout << "addr:" << addr;
+                //cout << "value: " << register_values.find(rtReg)->second;
+                mem_value.at(addr) = stoi(register_values.find(rtReg)->second);
               }
             }
-
             cycle++;
           }
-
         }
         // LW Instruction
         if(opcode == "0111"){
@@ -458,8 +525,17 @@ int main(int args, char **argv){
           }
           // For the actual word to load, take the offset 340 to base R0 and every increment of 4 is the next data register.
           instruction = "LW R" + to_string(rtReg) + ", " + to_string(offset) + "(R" + to_string(base) + ")";
-          addto_instruction_disassembly(instruction_disassembly, it, instruction);
-
+          if(iteration == 1)
+            addto_instruction_disassembly(instruction_disassembly, it, instruction);
+          else if(iteration == 2){
+            addto_cycles_simulation(cycle_instructions, cycle, it, instruction);
+            int addr = (offset + stoi(register_values.find(base)->second));
+            int memoryval = mem_value.find(addr)->second;
+            //cout << "addr:" << addr << " |memval:" << memoryval;
+            register_values.erase(rtReg);
+            register_values.insert(pair<int,string>(rtReg, to_string(memoryval)));
+          }
+          cycle++;
         }
         // SLL Instruction  //31-26
         if(opcode == "1000"){
@@ -476,14 +552,22 @@ int main(int args, char **argv){
               rtReg = rtReg + pow(2, 15 - i);
           }
           // Keep the new value of rdReg in another variable
-          shftedRegAmt = rtReg;
+          shftedRegAmt = stoi(register_values.find(rtReg)->second);
           // For each shift amount, shift left bits 1.
           for(int i = sa; i > 0; i--){
             shftedRegAmt = shftedRegAmt << 1;
           }
           instruction = "SLL R" + to_string(rdReg) + ", R" + to_string(rtReg) + ", #" + to_string(sa);
-          addto_instruction_disassembly(instruction_disassembly, it, instruction);
-
+          if(iteration == 1)
+            addto_instruction_disassembly(instruction_disassembly, it, instruction);
+          else if(iteration == 2){
+            addto_cycles_simulation(cycle_instructions, cycle, it, instruction);
+            // Remove current register value and replace with the new one
+            register_values.erase(rdReg);
+            register_values.insert(pair<int, string>(rdReg, to_string(shftedRegAmt)));
+            // cout << "rdreg:" << rdReg << "|amt: " << to_string(shftedRegAmt);
+            cycle++;
+          }
         }
         // SRL Instruction
         if(opcode == "1001"){
@@ -506,7 +590,16 @@ int main(int args, char **argv){
             shftedRegAmt = shftedRegAmt << 1;
           }
           instruction = "SRL R" + to_string(rdReg) + ", R" + to_string(rtReg) + ", #" + to_string(sa);
-          addto_instruction_disassembly(instruction_disassembly, it, instruction);
+          if(iteration == 1)
+            addto_instruction_disassembly(instruction_disassembly, it, instruction);
+          else if(iteration == 2){
+            addto_cycles_simulation(cycle_instructions, cycle, it, instruction);
+            // Remove current register value and replace with the new one
+            if(register_values.count(rdReg) == 1)
+              register_values.erase(rdReg);
+            register_values.insert(pair<int, string>(rdReg, to_string(shftedRegAmt)));
+            cycle++;
+          }
         }
         // SRA Instruction
         if(opcode == "1010"){
@@ -530,12 +623,26 @@ int main(int args, char **argv){
             shftedRegAmt = shftedRegAmt << 1;
           }
           instruction = "SRA R" + to_string(rdReg) + ", R" + to_string(rtReg) + ", #" + to_string(sa);
-          addto_instruction_disassembly(instruction_disassembly, it, instruction);
-        }
+          if(iteration == 1)
+            addto_instruction_disassembly(instruction_disassembly, it, instruction);
+          else if(iteration == 2){
+            addto_cycles_simulation(cycle_instructions, cycle, it, instruction);
+            // Remove current register value and replace with the new one
+            if(register_values.count(rdReg) == 1)
+              register_values.erase(rdReg);
+            register_values.insert(pair<int, string>(rdReg, to_string(shftedRegAmt)));
+            cycle++;
+          }
+         }
         // NOP Instruction
         if(opcode == "1011"){
           instruction = "NOP";
-          addto_instruction_disassembly(instruction_disassembly, it, instruction);
+          if(iteration == 1)
+            addto_instruction_disassembly(instruction_disassembly, it, instruction);
+          else if(iteration == 2){
+            addto_cycles_simulation(cycle_instructions, cycle, it, instruction);
+            cycle++;
+          }
         }
       }
       else if(categorybits == "11"){
@@ -572,9 +679,7 @@ int main(int args, char **argv){
                 register_values.at(rdReg) = to_string(z);
               }
             }
-            cycle_instructions.insert(pair<int, vector<string>>(cycle, vector<string>()));
-            cycle_instructions[cycle].push_back(to_string(it->first));
-            cycle_instructions[cycle].push_back(instruction);
+            addto_cycles_simulation(cycle_instructions, cycle, it, instruction);
             cycle++;
 
           }
@@ -599,7 +704,23 @@ int main(int args, char **argv){
           }
 
           instruction = "SUB R" + to_string(rdReg) + ", R" + to_string(rsReg) + ", R" + to_string(rtReg);
-          addto_instruction_disassembly(instruction_disassembly, it, instruction);
+          if(iteration == 1)
+            addto_instruction_disassembly(instruction_disassembly, it, instruction);
+          else if(iteration == 2){
+            for(map<int,string>::iterator regItr = register_values.begin(); regItr != register_values.end(); regItr++){
+              if(regItr->first == rdReg){
+                x = stoi(register_values.at(rsReg));
+                y = stoi(register_values.at(rtReg));
+                // result of the two registers
+                z = x - y;
+
+                register_values.at(rdReg) = to_string(z);
+              }
+            }
+            addto_cycles_simulation(cycle_instructions, cycle, it, instruction);
+            cycle++;
+
+          }
         }
         // MUL Instruction
         if(opcode == "0010"){
@@ -621,7 +742,24 @@ int main(int args, char **argv){
           }
 
           instruction = "MUL R" + to_string(rdReg) + ", R" + to_string(rsReg) + ", R" + to_string(rtReg);
-          addto_instruction_disassembly(instruction_disassembly, it, instruction);
+          if(iteration == 1)
+            addto_instruction_disassembly(instruction_disassembly, it, instruction);
+          else if(iteration == 2){
+            for(map<int,string>::iterator regItr = register_values.begin(); regItr != register_values.end(); regItr++){
+              if(regItr->first == rdReg){
+                x = stoi(register_values.at(rsReg));
+                y = stoi(register_values.at(rtReg));
+                // cout << "x:" << x << "  | y:" << y;
+                // result of the two registers
+                z = x * y;
+
+                register_values.at(rdReg) = to_string(z);
+              }
+            }
+            addto_cycles_simulation(cycle_instructions, cycle, it, instruction);
+            cycle++;
+
+          }
         }
         // AND Instruction
         if(opcode == "0011"){
@@ -754,11 +892,17 @@ int main(int args, char **argv){
               rsReg = rsReg + pow(2, 10 - i);
             }
           }
-
           instruction = "ADDI R" + to_string(rtReg) + ", R" + to_string(rsReg) + ", #" + to_string(immediate);
           if(iteration == 1)
             addto_instruction_disassembly(instruction_disassembly, it, instruction);
-
+          else if(iteration == 2){
+            addto_cycles_simulation(cycle_instructions, cycle, it, instruction);
+            // Remove current register value and replace with the new one
+            x = stoi(register_values.find(rsReg)->second);
+            z = x + immediate;
+            register_values.at(rtReg) = to_string(z);
+            cycle++;
+          }
         }
         // ANDI Instruction
         if(opcode == "1001"){
@@ -826,53 +970,36 @@ int main(int args, char **argv){
           addto_instruction_disassembly(instruction_disassembly, it, instruction);
         }
       }
+      if(iteration == 2){
+        int regNum = 0;
+        // If it's a jump, I have to increase the cycle number so that it'll print out its jump state before changing the iterator to the one right before current iterator??
+        if( (opcode == "0000" || opcode == "0010" || opcode == "0011" || opcode == "0100") && (categorybits == "01") ){
+          cycle++;
+        }
+        //print_Simulation(mem_value, regNum, cycle, register_values, instruction_disassembly, it, instruction);
+        write_Simulation(simulation, mem_value, regNum, cycle, register_values, instruction_disassembly, it, instruction);
+        // If jump, set the current iterator to be equal to the instruction right before where we want so that when it loops around it'll be the actual one we want
+        if( (opcode == "0000" || opcode == "0010" || opcode == "0011" || opcode == "0100") && (categorybits == "01") ){
+          it = jumper;
+        }
 
+      }
       //cout << it->second << "\t" << categorybits << "\t" << opcode << "\t" << it->first << endl;
-      cycle++;
     }
     // The iterations are first iteration for the disassembly to be finished and then second iteration for actual register work
     iteration++;
   }
 
-
-
-  printinstruction_disassembly(instruction_disassembly);
-  printDataValues(mem_value);
-  write_Disassembly(instruction_disassembly, mem_value, mem_data);
-  //print_DataReg(mem_value);
-
   //register_values.insert(pair<int, string>(0, "10"));
   //register_values.at(0) = "fifty";    // This works as valid way of inserting register values
-  cout << cycle_instructions.size();
-  int regNum = 0;
-  for(map<int, vector<string>>::iterator cycleItr = cycle_instructions.begin(); cycleItr != cycle_instructions.end(); cycleItr++){
-    regNum = 0;
-    cout << "-------\n";
-    cout << "Cycle: " << cycle << "\t" << cycleItr->first << "\t" << cycleItr->second.at(0) << "\t" << cycleItr->second.at(1) << "\n\n";
-    cout << "Registers";
-    for(map<int,string>::iterator regItr = register_values.begin(); regItr != register_values.end(); regItr++){
-      // For printing out the register row names
-      if(regNum % 8 == 0){
-        if(regNum == 0)
-          cout << "\nR00:\t";
-        else if(regNum == 8)
-          cout << "\nR08:\t";
-        else
-          cout << "\nR" << regNum << ":\t";
-      }
-      cout << regItr->second << "\t";
-      regNum++;
-    }
-    cout << "\n";
-    cycle++;
-    regNum++;
-    cout << "\n";
-    print_DataReg(mem_value);
-  }
 
-  //write_Simulation(instruction_simulation);
-  //cout << "\nData Values\t\t\t\t\t" << "Memory address \t" << endl;
+  // Print out number of cycles
+  //cout << cycle_instructions.size();
 
+  write_Disassembly(instruction_disassembly, mem_value, mem_data);
+  // print_Disassembly(instruction_disassembly);
+  // printDataValues(mem_value);
+  // print_DataReg(mem_value);
 
   return 0;
 }
