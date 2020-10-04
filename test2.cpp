@@ -205,6 +205,12 @@ void addto_instruction_disassembly(map<string, vector<string>> &instruction_disa
   instruction_disassembly[to_string(it->first)].push_back(instruction);
 }
 
+void addto_cycles_simulation(map<int, vector<string>> &cycle_instructions, int cycle, map<int, string>::iterator it, string instruction){
+  cycle_instructions.insert(pair<int, vector<string>>(cycle, vector<string>()));
+  cycle_instructions[cycle].push_back(to_string(it->first));
+  cycle_instructions[cycle].push_back(instruction);
+}
+
 void print_DataReg(map<int,int> mem_value){
   cout << "Data";
   int dataCounter = 0;
@@ -389,6 +395,7 @@ int main(int args, char **argv){
   // map<memoryaddr, instruction>
   map<string, vector<string>> instruction_disassembly;
   map<int, string> register_values;
+  map<int, vector<string>> cycle_instructions;
 
   // Base address to start at
   int address = 256;
@@ -486,6 +493,7 @@ int main(int args, char **argv){
             addto_instruction_disassembly(instruction_disassembly, it, instruction);
           else if(iteration == 2){
             //  cout << "jumpaddr:" << jumpaddr;
+            addto_cycles_simulation(cycle_instructions, cycle, it, instruction);
             // finds the iterator that has the jump addr as the key.
             jumper = mem_instruction.find(jumpaddr-4);
             //cout << "it: " << it->first << "\t" << it->second << "\n";
@@ -512,6 +520,7 @@ int main(int args, char **argv){
                 jumper = mem_instruction.find(x);
               }
             }
+            addto_cycles_simulation(cycle_instructions, cycle, it, instruction);
           }
         }
         // BEQ Instruction
@@ -545,6 +554,7 @@ int main(int args, char **argv){
             //cout << "reg1. :" << register_values.find(rsReg) -> second << "\n";
             //cout << "reg2. :" << register_values.find(rtReg) -> second << "\n";
             //cout << "rs:" << rsReg << ", " << stoi(register_values.find(rsReg)->second) << "\n";
+            addto_cycles_simulation(cycle_instructions, cycle, it, instruction);
             if(register_values.find(rsReg)->second == register_values.find(rtReg)->second){
               //cout << "MEMORY ADDRESS:" << (it->first + offset + 4) << "\n";
               jumper = mem_instruction.find(it->first + offset);
@@ -572,6 +582,7 @@ int main(int args, char **argv){
           if(iteration == 1)
             addto_instruction_disassembly(instruction_disassembly, it, instruction);
           else if(iteration == 2){
+            addto_cycles_simulation(cycle_instructions, cycle, it, instruction);
             //cout << "rs:" << rsReg << ", " << stoi(register_values.find(rsReg)->second) << "\n";
             if(stoi(register_values.find(rsReg)->second) < 0){
               jumper = mem_instruction.find((it->first + offset));
@@ -599,6 +610,7 @@ int main(int args, char **argv){
           if(iteration == 1)
             addto_instruction_disassembly(instruction_disassembly, it, instruction);
           else if(iteration == 2){
+            addto_cycles_simulation(cycle_instructions, cycle, it, instruction);
             //cout << "rs:" << rsReg << ", " << stoi(register_values.find(rsReg)->second) << "\n";
             if(stoi(register_values.find(rsReg)->second) > 0){
               jumper = mem_instruction.find((it->first + offset));
@@ -614,6 +626,7 @@ int main(int args, char **argv){
           if(iteration == 1)
             addto_instruction_disassembly(instruction_disassembly, it, instruction);
           else if(iteration == 2){
+            addto_cycles_simulation(cycle_instructions, cycle, it, instruction);
             cycle++;
           }
         }
@@ -639,6 +652,7 @@ int main(int args, char **argv){
           if(iteration == 1)
             addto_instruction_disassembly(instruction_disassembly, it, instruction);
           else if(iteration == 2){
+            addto_cycles_simulation(cycle_instructions, cycle, it, instruction);
             int addr = (offset + stoi(register_values.find(base)->second));
             for(map<int,int>::iterator dataItr = mem_value.begin(); dataItr != mem_value.end(); dataItr++){
               if(addr == dataItr->first){
@@ -673,6 +687,7 @@ int main(int args, char **argv){
           if(iteration == 1)
             addto_instruction_disassembly(instruction_disassembly, it, instruction);
           else if(iteration == 2){
+            addto_cycles_simulation(cycle_instructions, cycle, it, instruction);
             int addr = (offset + stoi(register_values.find(base)->second));
             int memoryval = mem_value.find(addr)->second;
             //cout << "addr:" << addr << " |memval:" << memoryval;
@@ -705,6 +720,7 @@ int main(int args, char **argv){
           if(iteration == 1)
             addto_instruction_disassembly(instruction_disassembly, it, instruction);
           else if(iteration == 2){
+            addto_cycles_simulation(cycle_instructions, cycle, it, instruction);
             // Remove current register value and replace with the new one
             register_values.erase(rdReg);
             register_values.insert(pair<int, string>(rdReg, to_string(shftedRegAmt)));
@@ -736,6 +752,7 @@ int main(int args, char **argv){
           if(iteration == 1)
             addto_instruction_disassembly(instruction_disassembly, it, instruction);
           else if(iteration == 2){
+            addto_cycles_simulation(cycle_instructions, cycle, it, instruction);
             // Remove current register value and replace with the new one
             if(register_values.count(rdReg) == 1)
               register_values.erase(rdReg);
@@ -768,6 +785,7 @@ int main(int args, char **argv){
           if(iteration == 1)
             addto_instruction_disassembly(instruction_disassembly, it, instruction);
           else if(iteration == 2){
+            addto_cycles_simulation(cycle_instructions, cycle, it, instruction);
             // Remove current register value and replace with the new one
             if(register_values.count(rdReg) == 1)
               register_values.erase(rdReg);
@@ -781,6 +799,7 @@ int main(int args, char **argv){
           if(iteration == 1)
             addto_instruction_disassembly(instruction_disassembly, it, instruction);
           else if(iteration == 2){
+            addto_cycles_simulation(cycle_instructions, cycle, it, instruction);
             cycle++;
           }
         }
@@ -819,6 +838,7 @@ int main(int args, char **argv){
                 register_values.at(rdReg) = to_string(z);
               }
             }
+            addto_cycles_simulation(cycle_instructions, cycle, it, instruction);
             cycle++;
 
           }
@@ -856,7 +876,7 @@ int main(int args, char **argv){
                 register_values.at(rdReg) = to_string(z);
               }
             }
-
+            addto_cycles_simulation(cycle_instructions, cycle, it, instruction);
             cycle++;
 
           }
@@ -895,6 +915,7 @@ int main(int args, char **argv){
                 register_values.at(rdReg) = to_string(z);
               }
             }
+            addto_cycles_simulation(cycle_instructions, cycle, it, instruction);
             cycle++;
 
           }
@@ -1099,6 +1120,7 @@ int main(int args, char **argv){
           if(iteration == 1)
             addto_instruction_disassembly(instruction_disassembly, it, instruction);
           else if(iteration == 2){
+            addto_cycles_simulation(cycle_instructions, cycle, it, instruction);
             // Remove current register value and replace with the new one
             x = stoi(register_values.find(rsReg)->second);
             z = x + immediate;
