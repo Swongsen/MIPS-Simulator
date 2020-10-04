@@ -255,13 +255,14 @@ int main(int args, char **argv){
   int cycle = 1;
 
   if(file.good()){
+    cout << "File open \n";
     while(!file.eof()){
       string line;
 
       getline(file, line);
-      if(linenum == 0){
-        cout << "Input line length: " << line.length() << '\n' << endl;
-      }
+      // if(linenum == 0){
+      //   cout << "Input line length: " << line.length() << '\n' << endl;
+      // }
       // If there is something on the line (not empty)
       if(line != ""){
         categorybits = line.substr(0,2);
@@ -290,7 +291,7 @@ int main(int args, char **argv){
   create_registers(register_values);
 
   //cout << "MIPS Code \t\t\t" << "  Category \t" << "Opcode \t" << "Memory address" << endl;
-  cout << "MIPS Code \t\t\t" << "  Memory \t" <<  "Instruction" << endl;
+  //cout << "MIPS Code \t\t\t" << "  Memory \t" <<  "Instruction" << endl;
   int iteration = 1;
   while(iteration <= 2){
     int cycle = 0;
@@ -355,13 +356,12 @@ int main(int args, char **argv){
             for(map<int,string>::iterator regItr = register_values.begin(); regItr != register_values.end(); regItr++){
               if(regItr->first == rsReg){
                 // Finds the register value stored at the register and stores it to x
-                x = stoi(register_values.at(rsReg));
+                x = stoi(register_values.find(rsReg)->second);
+                // make the iterator start where x's value (memory?) is
+                jumper = mem_instruction.find(x);
               }
             }
             addto_cycles_simulation(cycle_instructions, cycle, it, instruction);
-            // make the iterator start where x's value (memory?) is
-            it = mem_instruction.find(x);
-            cycle++;
           }
         }
         // BEQ Instruction
@@ -781,7 +781,15 @@ int main(int args, char **argv){
           }
 
           instruction = "AND R" + to_string(rdReg) + ", R" + to_string(rsReg) + ", R" + to_string(rtReg);
-          addto_instruction_disassembly(instruction_disassembly, it, instruction);
+          if(iteration == 1){
+            addto_instruction_disassembly(instruction_disassembly, it, instruction);
+          }
+          else if(iteration == 2){
+            x = stoi(register_values.find(rsReg)->second);
+            y = stoi(register_values.find(rtReg)->second);
+            z = x & y;
+            
+          }
         }
         // OR Instruction
         if(opcode == "0100"){
@@ -973,13 +981,13 @@ int main(int args, char **argv){
       if(iteration == 2){
         int regNum = 0;
         // If it's a jump, I have to increase the cycle number so that it'll print out its jump state before changing the iterator to the one right before current iterator??
-        if( (opcode == "0000" || opcode == "0010" || opcode == "0011" || opcode == "0100") && (categorybits == "01") ){
+        if( (opcode == "0000" || opcode == "0001" || opcode == "0010" || opcode == "0011" || opcode == "0100") && (categorybits == "01") ){
           cycle++;
         }
         //print_Simulation(mem_value, regNum, cycle, register_values, instruction_disassembly, it, instruction);
         write_Simulation(simulation, mem_value, regNum, cycle, register_values, instruction_disassembly, it, instruction);
         // If jump, set the current iterator to be equal to the instruction right before where we want so that when it loops around it'll be the actual one we want
-        if( (opcode == "0000" || opcode == "0010" || opcode == "0011" || opcode == "0100") && (categorybits == "01") ){
+        if( (opcode == "0000" || opcode == "0001" || opcode == "0010" || opcode == "0011" || opcode == "0100") && (categorybits == "01") ){
           it = jumper;
         }
 
@@ -997,6 +1005,7 @@ int main(int args, char **argv){
   //cout << cycle_instructions.size();
 
   write_Disassembly(instruction_disassembly, mem_value, mem_data);
+  cout <<  "Done";
   // print_Disassembly(instruction_disassembly);
   // printDataValues(mem_value);
   // print_DataReg(mem_value);
