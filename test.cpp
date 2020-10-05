@@ -297,24 +297,24 @@ string createImmediateBitsString(int immediate){
   else if(immediate < 0){
     // Get the original representation
     currentValue = immediate * -1;
-    for(int i = 0; i < 32; i++){
-      if(pow(2, 31-i) <= currentValue){
+    for(int i = 0; i < 16; i++){
+      if(pow(2, 15-i) <= currentValue){
         immediateString = immediateString + "1";
-        currentValue = currentValue - pow(2, 31-i);
+        currentValue = currentValue - pow(2, 15-i);
       }
-      else if(pow(2, 31-i) > currentValue){
+      else if(pow(2, 15-i) > currentValue){
         immediateString = immediateString + "0";
       }
     }
     // Complement the 0's and 1's
-    for(int i = 0; i < immediateString.length(); i++){
+    for(int i = 0; i < 16; i++){
       if(immediateString.at(i) == '0')
         immediateString.at(i) = '1';
       else if(immediateString.at(i) == '1')
         immediateString.at(i) = '0';
     }
     // Add 1 to the complement
-    for(int i = 31; i >= 0; i--){
+    for(int i = 15; i >= 0; i--){
       // Should be first 0 found. Turn(add) 1
       if(immediateString.at(i) == '0'){
         immediateString.at(i) = '1';
@@ -376,6 +376,9 @@ int int_ofbits(string bits){
 // AND function
 string and_function(string xbits, string ybits){
   string bits = "";
+  if(ybits.length() == 16)
+    ybits = "0000000000000000" + ybits;
+
   for(int i = 0; i < 32; i++){
     if(xbits.at(i) == '1' && ybits.at(i) == '1'){
       bits = bits + '1';
@@ -389,6 +392,9 @@ string and_function(string xbits, string ybits){
 // OR function
 string or_function(string xbits, string ybits){
   string bits = "";
+  if(ybits.length() == 16)
+    ybits = "0000000000000000" + ybits;
+
   for(int i = 0; i < 32; i++){
     if(xbits.at(i) == '1' || ybits.at(i) == '1')
       bits = bits + '1';
@@ -401,6 +407,9 @@ string or_function(string xbits, string ybits){
 // XOR function
 string xor_function(string xbits, string ybits){
   string bits = "";
+  if(ybits.length() == 16)
+    ybits = "0000000000000000" + ybits;
+
   for(int i = 0; i < 32; i++){
     if((xbits.at(i) == '1' && ybits.at(i) == '0') || (xbits.at(i) == '0' && ybits.at(i) == '1'))
       bits = bits + '1';
@@ -413,6 +422,9 @@ string xor_function(string xbits, string ybits){
 // NOR function
 string nor_function(string xbits, string ybits){
   string bits = "";
+  if(ybits.length() == 16)
+    ybits = "0000000000000000" + ybits;
+
   for(int i = 0; i < 32; i++){
     if(xbits.at(i) == '0' && ybits.at(i) == '0')
       bits = bits + '1';
@@ -986,6 +998,7 @@ int main(int args, char **argv){
             zbits = and_function(xbits, ybits);
             print_bits(instruction, xbits, ybits, zbits);
             z = int_ofbits(zbits);
+            cout << "resultInt:" << z << "\n\n";
             register_values.at(rdReg) = to_string(z);
             //cout << z;
             //cout << "x, xbits:" << x << "," << xbits << "|" << xbits.length();
@@ -1025,6 +1038,7 @@ int main(int args, char **argv){
             zbits = or_function(xbits, ybits);
             print_bits(instruction, xbits, ybits, zbits);
             z = int_ofbits(zbits);
+            cout << "resultInt:" << z << "\n\n";
             register_values.at(rdReg) = to_string(z);
             cycle++;
           }
@@ -1060,6 +1074,7 @@ int main(int args, char **argv){
             zbits = xor_function(xbits, ybits);
             print_bits(instruction, xbits, ybits, zbits);
             z = int_ofbits(zbits);
+            cout << "resultInt:" << z << "\n\n";
             register_values.at(rdReg) = to_string(z);
             cycle++;
           }
@@ -1095,6 +1110,7 @@ int main(int args, char **argv){
             zbits = nor_function(xbits, ybits);
             print_bits(instruction, xbits, ybits, zbits);
             z = int_ofbits(zbits);
+            cout << "resultInt:" << z << "\n\n";
             register_values.at(rdReg) = to_string(z);
             cycle++;
           }
@@ -1196,10 +1212,11 @@ int main(int args, char **argv){
           else if(iteration == 2){
             x = stoi(register_values.find(rsReg)->second);
             xbits = createRegisterBitsString(x);
-            ybits = createRegisterBitsString(immediate);
-            zbits = and_function(xbits, ybits);
+            ybits = "0000000000000000" + immediateString;
+            zbits = and_function(xbits, immediateString);
             print_bits(instruction, xbits, ybits, zbits);
             z = int_ofbits(zbits);
+            cout << "resultInt:" << z << "\n\n";
             register_values.at(rtReg) = to_string(z);
             cycle++;
           }
@@ -1232,10 +1249,11 @@ int main(int args, char **argv){
           else if(iteration == 2){
             x = stoi(register_values.find(rsReg)->second);
             xbits = createRegisterBitsString(x);
-            ybits = createRegisterBitsString(immediate);
-            zbits = or_function(xbits, ybits);
+            ybits = "0000000000000000" + immediateString;
+            zbits = or_function(xbits, immediateString);
             print_bits(instruction, xbits, ybits, zbits);
             z = int_ofbits(zbits);
+            cout << "resultInt:" << z << "\n\n";
             register_values.at(rtReg) = to_string(z);
             cycle++;
           }
@@ -1267,10 +1285,11 @@ int main(int args, char **argv){
           else if(iteration == 2){
             x = stoi(register_values.find(rsReg)->second);
             xbits = createRegisterBitsString(x);
-            ybits = createRegisterBitsString(immediate);
-            zbits = xor_function(xbits, ybits);
+            ybits = "0000000000000000" + immediateString;
+            zbits = xor_function(xbits, immediateString);
             print_bits(instruction, xbits, ybits, zbits);
             z = int_ofbits(zbits);
+            cout << "resultInt:" << z << "\n\n";
             register_values.at(rtReg) = to_string(z);
             cycle++;
           }
