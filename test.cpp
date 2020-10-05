@@ -378,8 +378,6 @@ int int_ofbits(string bits){
 // AND function
 string and_function(string xbits, string ybits){
   string bits = "";
-  if(ybits.length() == 16)
-    ybits = "0000000000000000" + ybits;
 
   for(int i = 0; i < 32; i++){
     if(xbits.at(i) == '1' && ybits.at(i) == '1'){
@@ -394,8 +392,6 @@ string and_function(string xbits, string ybits){
 // OR function
 string or_function(string xbits, string ybits){
   string bits = "";
-  if(ybits.length() == 16)
-    ybits = "0000000000000000" + ybits;
 
   for(int i = 0; i < 32; i++){
     if(xbits.at(i) == '1' || ybits.at(i) == '1')
@@ -409,8 +405,6 @@ string or_function(string xbits, string ybits){
 // XOR function
 string xor_function(string xbits, string ybits){
   string bits = "";
-  if(ybits.length() == 16)
-    ybits = "0000000000000000" + ybits;
 
   for(int i = 0; i < 32; i++){
     if((xbits.at(i) == '1' && ybits.at(i) == '0') || (xbits.at(i) == '0' && ybits.at(i) == '1'))
@@ -424,8 +418,6 @@ string xor_function(string xbits, string ybits){
 // NOR function
 string nor_function(string xbits, string ybits){
   string bits = "";
-  if(ybits.length() == 16)
-    ybits = "0000000000000000" + ybits;
 
   for(int i = 0; i < 32; i++){
     if(xbits.at(i) == '0' && ybits.at(i) == '0')
@@ -1218,7 +1210,14 @@ int main(int args, char **argv){
           else if(iteration == 2){
             x = stoi(register_values.find(rsReg)->second);
             xbits = createRegisterBitsString(x);
-            ybits = "0000000000000000" + immediateString;
+            if(immediate >= 0 ){
+              immediateString = "0000000000000000" + immediateString;
+              ybits = immediateString;
+            }
+            else if(immediate < 0){
+              immediateString = "1111111111111111" + immediateString;
+              ybits = immediateString;
+            }
             zbits = and_function(xbits, immediateString);
             print_bits(instruction, xbits, ybits, zbits);
             z = int_ofbits(zbits);
@@ -1255,7 +1254,14 @@ int main(int args, char **argv){
           else if(iteration == 2){
             x = stoi(register_values.find(rsReg)->second);
             xbits = createRegisterBitsString(x);
-            ybits = "0000000000000000" + immediateString;
+            if(immediate >= 0 ){
+              immediateString = "0000000000000000" + immediateString;
+              ybits = immediateString;
+            }
+            else if(immediate < 0){
+              immediateString = "1111111111111111" + immediateString;
+              ybits = immediateString;
+            }
             zbits = or_function(xbits, immediateString);
             print_bits(instruction, xbits, ybits, zbits);
             z = int_ofbits(zbits);
@@ -1291,7 +1297,14 @@ int main(int args, char **argv){
           else if(iteration == 2){
             x = stoi(register_values.find(rsReg)->second);
             xbits = createRegisterBitsString(x);
-            ybits = "0000000000000000" + immediateString;
+            if(immediate >= 0 ){
+              immediateString = "0000000000000000" + immediateString;
+              ybits = immediateString;
+            }
+            else if(immediate < 0){
+              immediateString = "1111111111111111" + immediateString;
+              ybits = immediateString;
+            }
             zbits = xor_function(xbits, immediateString);
             print_bits(instruction, xbits, ybits, zbits);
             z = int_ofbits(zbits);
