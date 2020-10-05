@@ -280,6 +280,7 @@ string createRegisterBitsString(int value){
   return bits;
 }
 
+// For immediate operations, need 16 bit string
 string createImmediateBitsString(int immediate){
   string immediateString = "";
   int currentValue = immediate;
@@ -328,6 +329,7 @@ string createImmediateBitsString(int immediate){
   }
   return immediateString;
 }
+
 // Gets the integer representation of a string 2s comp.
 int int_ofbits(string bits){
   int ans = 0;
@@ -581,6 +583,7 @@ int main(int args, char **argv){
               }
             }
           }
+
         }
         // BEQ Instruction
         if(opcode == "0010"){
@@ -795,18 +798,17 @@ int main(int args, char **argv){
               rtReg = rtReg + pow(2, 15 - i);
           }
           // Keep the new value of rdReg in another variable
-          shftedRegAmt = rtReg;
+          shftedRegAmt = stoi(register_values.find(rtReg)->second);
           // For each shift amount, shift left bits 1.
           for(int i = sa; i > 0; i--){
-            shftedRegAmt = shftedRegAmt << 1;
+            shftedRegAmt = shftedRegAmt >> 1;
           }
           instruction = "SRL R" + to_string(rdReg) + ", R" + to_string(rtReg) + ", #" + to_string(sa);
           if(iteration == 1)
             addto_instruction_disassembly(instruction_disassembly, it, instruction);
           else if(iteration == 2){
             // Remove current register value and replace with the new one
-            if(register_values.count(rdReg) == 1)
-              register_values.erase(rdReg);
+            register_values.erase(rdReg);
             register_values.insert(pair<int, string>(rdReg, to_string(shftedRegAmt)));
             cycle++;
           }
@@ -827,18 +829,22 @@ int main(int args, char **argv){
               rtReg = rtReg + pow(2, 15 - i);
           }
           // Keep the new value of rdReg in another variable
-          shftedRegAmt = rtReg;
+          shftedRegAmt = stoi(register_values.find(rtReg)->second);
           // For each shift amount, shift left bits 1.
           for(int i = sa; i > 0; i--){
-            shftedRegAmt = shftedRegAmt << 1;
+            shftedRegAmt = shftedRegAmt >> 1;
           }
+          // turn shiftedregamt integer into 32 bit string and then manipulate
+          // currently working as SRL? (need to implement sign bit thing)?
+          // tested with negative numbers and positive and seem to work same??
+          //string signbit = "";
+          //string arithString = "";
           instruction = "SRA R" + to_string(rdReg) + ", R" + to_string(rtReg) + ", #" + to_string(sa);
           if(iteration == 1)
             addto_instruction_disassembly(instruction_disassembly, it, instruction);
           else if(iteration == 2){
             // Remove current register value and replace with the new one
-            if(register_values.count(rdReg) == 1)
-              register_values.erase(rdReg);
+            register_values.erase(rdReg);
             register_values.insert(pair<int, string>(rdReg, to_string(shftedRegAmt)));
             cycle++;
           }
