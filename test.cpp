@@ -10,7 +10,6 @@
 
 
 using namespace std;
-void printDataValues(map<int,int> mem_value);
 
 // Creates the memory to data map
 map<int,int> calculateDataValues(map<int,string> mem_data){
@@ -197,6 +196,7 @@ void write_Simulation(ofstream &simulation, map<int,int> mem_value, int regNum, 
   }
   simulation << "\n";
 }
+
 // References instruction_disassembly to add instruction to it. Takes in mem_instruction iterator and instruction for key / values
 void addto_instruction_disassembly(map<string, vector<string>> &instruction_disassembly, map<int,string>::iterator it, string instruction){
   // Create new map for the simulation output <stringified memory address | instruction binary -> instructions -> >
@@ -279,14 +279,63 @@ string createRegisterBitsString(int value){
 
   return bits;
 }
+
+string createImmediateBitsString(int immediate){
+  string immediateString = "";
+  int currentValue = immediate;
+  if(immediate >= 0){
+    for(int i = 0; i < 16; i++){
+      if(pow(2, 15-i) <= currentValue){
+        immediateString = immediateString + "1";
+        currentValue = currentValue - pow(2, 15-i);
+      }
+      else if(pow(2, 15-i) > currentValue){
+        immediateString = immediateString + "0";
+      }
+    }
+  }
+  else if(immediate < 0){
+    // Get the original representation
+    currentValue = immediate * -1;
+    for(int i = 0; i < 32; i++){
+      if(pow(2, 31-i) <= currentValue){
+        immediateString = immediateString + "1";
+        currentValue = currentValue - pow(2, 31-i);
+      }
+      else if(pow(2, 31-i) > currentValue){
+        immediateString = immediateString + "0";
+      }
+    }
+    // Complement the 0's and 1's
+    for(int i = 0; i < immediateString.length(); i++){
+      if(immediateString.at(i) == '0')
+        immediateString.at(i) = '1';
+      else if(immediateString.at(i) == '1')
+        immediateString.at(i) = '0';
+    }
+    // Add 1 to the complement
+    for(int i = 31; i >= 0; i--){
+      // Should be first 0 found. Turn(add) 1
+      if(immediateString.at(i) == '0'){
+        immediateString.at(i) = '1';
+        break;
+      }
+      // If the bit is already a 1, make it 0 because thats how bit addition works
+      else if(immediateString.at(i) == '1'){
+        immediateString.at(i) = '0';
+      }
+    }
+  }
+  return immediateString;
+}
 // Gets the integer representation of a string 2s comp.
 int int_ofbits(string bits){
   int ans = 0;
   // If non-negative number
   if(bits.at(0) != '1'){
-    for(int i = 31; i >= 0; i--){
+    for(int i = bits.length()-1; i >= 0; i--){
       if(bits.at(i) == '1'){
-        ans = ans + pow(2, 31-i);
+        ans = ans + pow(2, bits.length()-1-i);
       }
     }
   }
@@ -373,7 +422,13 @@ string nor_function(string xbits, string ybits){
   return bits;
 }
 
-
+// Used for checking the bitwise functions
+void print_bits(string instruction, string xbits, string ybits, string zbits){
+  cout << instruction << "\n";
+  cout << "first register  : " << xbits << "\n";
+  cout << "second/immediate: " << ybits << "\n";
+  cout << "result          : " << zbits << "\n";
+}
 
 int main(int args, char **argv){
 
@@ -929,6 +984,7 @@ int main(int args, char **argv){
             xbits = createRegisterBitsString(x);
             ybits = createRegisterBitsString(y);
             zbits = and_function(xbits, ybits);
+            print_bits(instruction, xbits, ybits, zbits);
             z = int_ofbits(zbits);
             register_values.at(rdReg) = to_string(z);
             //cout << z;
@@ -967,6 +1023,7 @@ int main(int args, char **argv){
             xbits = createRegisterBitsString(x);
             ybits = createRegisterBitsString(y);
             zbits = or_function(xbits, ybits);
+            print_bits(instruction, xbits, ybits, zbits);
             z = int_ofbits(zbits);
             register_values.at(rdReg) = to_string(z);
             cycle++;
@@ -1001,6 +1058,7 @@ int main(int args, char **argv){
             xbits = createRegisterBitsString(x);
             ybits = createRegisterBitsString(y);
             zbits = xor_function(xbits, ybits);
+            print_bits(instruction, xbits, ybits, zbits);
             z = int_ofbits(zbits);
             register_values.at(rdReg) = to_string(z);
             cycle++;
@@ -1035,6 +1093,7 @@ int main(int args, char **argv){
             xbits = createRegisterBitsString(x);
             ybits = createRegisterBitsString(y);
             zbits = nor_function(xbits, ybits);
+            print_bits(instruction, xbits, ybits, zbits);
             z = int_ofbits(zbits);
             register_values.at(rdReg) = to_string(z);
             cycle++;
@@ -1096,6 +1155,9 @@ int main(int args, char **argv){
               rsReg = rsReg + pow(2, 10 - i);
             }
           }
+          string immediateString = createImmediateBitsString(immediate);
+          //cout << "immediatestring:" << immediateString << "  | " << immediateString.length();
+          immediate = int_ofbits(immediateString);
           instruction = "ADDI R" + to_string(rtReg) + ", R" + to_string(rsReg) + ", #" + to_string(immediate);
           if(iteration == 1)
             addto_instruction_disassembly(instruction_disassembly, it, instruction);
@@ -1124,7 +1186,9 @@ int main(int args, char **argv){
               rsReg = rsReg + pow(2, 10 - i);
             }
           }
-
+          string immediateString = createImmediateBitsString(immediate);
+          //cout << "immediatestring:" << immediateString << "  | " << immediateString.length();
+          immediate = int_ofbits(immediateString);
           instruction = "ANDI R" + to_string(rtReg) + ", R" + to_string(rsReg) + ", #" + to_string(immediate);
           if(iteration == 1){
             addto_instruction_disassembly(instruction_disassembly, it, instruction);
@@ -1132,18 +1196,11 @@ int main(int args, char **argv){
           else if(iteration == 2){
             x = stoi(register_values.find(rsReg)->second);
             xbits = createRegisterBitsString(x);
-            cout << "xbits: " << xbits << "\n";
-            cout << "immediate: " << immediate << "\n";
             ybits = createRegisterBitsString(immediate);
-            cout << "ybits: " << ybits << "\n";
             zbits = and_function(xbits, ybits);
-            cout << "zbits: "  << zbits << "\n";
+            print_bits(instruction, xbits, ybits, zbits);
             z = int_ofbits(zbits);
             register_values.at(rtReg) = to_string(z);
-            //cout << z;
-            //cout << "x, xbits:" << x << "," << xbits << "|" << xbits.length();
-            //cout << "\ny, ybits:" << y << "," << ybits << "|" << ybits.length();
-            //cout << "\nzbits: " << zbits;
             cycle++;
           }
         }
@@ -1165,13 +1222,26 @@ int main(int args, char **argv){
               rsReg = rsReg + pow(2, 10 - i);
             }
           }
-
+          string immediateString = createImmediateBitsString(immediate);
+          //cout << "immediatestring:" << immediateString << "  | " << immediateString.length();
+          immediate = int_ofbits(immediateString);
           instruction = "ORI R" + to_string(rtReg) + ", R" + to_string(rsReg) + ", #" + to_string(immediate);
-          addto_instruction_disassembly(instruction_disassembly, it, instruction);
+          if(iteration == 1){
+            addto_instruction_disassembly(instruction_disassembly, it, instruction);
+          }
+          else if(iteration == 2){
+            x = stoi(register_values.find(rsReg)->second);
+            xbits = createRegisterBitsString(x);
+            ybits = createRegisterBitsString(immediate);
+            zbits = or_function(xbits, ybits);
+            print_bits(instruction, xbits, ybits, zbits);
+            z = int_ofbits(zbits);
+            register_values.at(rtReg) = to_string(z);
+            cycle++;
+          }
         }
         // XORI Instruction
         if(opcode == "1011"){
-
           for(int i = it->second.length() - 1; i >= 16; i--){
             if(it->second.at(i) == '1'){
               immediate = immediate + pow(2, it->second.length() - i - 1);
@@ -1187,9 +1257,23 @@ int main(int args, char **argv){
               rsReg = rsReg + pow(2, 10 - i);
             }
           }
-
+          string immediateString = createImmediateBitsString(immediate);
+          //cout << "immediatestring:" << immediateString << "  | " << immediateString.length();
+          immediate = int_ofbits(immediateString);
           instruction = "XORI R" + to_string(rtReg) + ", R" + to_string(rsReg) + ", #" + to_string(immediate);
-          addto_instruction_disassembly(instruction_disassembly, it, instruction);
+          if(iteration == 1){
+            addto_instruction_disassembly(instruction_disassembly, it, instruction);
+          }
+          else if(iteration == 2){
+            x = stoi(register_values.find(rsReg)->second);
+            xbits = createRegisterBitsString(x);
+            ybits = createRegisterBitsString(immediate);
+            zbits = xor_function(xbits, ybits);
+            print_bits(instruction, xbits, ybits, zbits);
+            z = int_ofbits(zbits);
+            register_values.at(rtReg) = to_string(z);
+            cycle++;
+          }
         }
       }
       if(iteration == 2){
