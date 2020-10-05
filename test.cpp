@@ -236,7 +236,7 @@ string createRegisterBitsString(int value){
     for(int i = 0; i < 32; i++){
       if(pow(2, 31-i) <= currentValue){
         bits = bits + "1";
-        currentValue = currentValue - pow(2, 32-i);
+        currentValue = currentValue - pow(2, 31-i);
       }
       else if(pow(2, 31-i) > currentValue){
         bits = bits + "0";
@@ -250,7 +250,7 @@ string createRegisterBitsString(int value){
     for(int i = 0; i < 32; i++){
       if(pow(2, 31-i) <= currentValue){
         bits = bits + "1";
-        currentValue = currentValue - pow(2, 32-i);
+        currentValue = currentValue - pow(2, 31-i);
       }
       else if(pow(2, 31-i) > currentValue){
         bits = bits + "0";
@@ -326,52 +326,53 @@ int int_ofbits(string bits){
 
 // AND function
 string and_function(string xbits, string ybits){
-  string zbits = "";
+  string bits = "";
   for(int i = 0; i < 32; i++){
-    if(xbits.at(i) == ybits.at(i) && (xbits.at(i) == '1' && ybits.at(i) == '1')){
-      zbits = zbits + '1';
+    if(xbits.at(i) == '1' && ybits.at(i) == '1'){
+      bits = bits + '1';
     }
     else
-      zbits = zbits + '0';
+      bits = bits + '0';
   }
-  return zbits;
+  return bits;
 }
 
 // OR function
 string or_function(string xbits, string ybits){
-  string zbits = "";
+  string bits = "";
   for(int i = 0; i < 32; i++){
     if(xbits.at(i) == '1' || ybits.at(i) == '1')
-      zbits = zbits + '1';
+      bits = bits + '1';
     else if(xbits.at(i) == '0' && ybits.at(i) == '0')
-      zbits = zbits + '0';
+      bits = bits + '0';
   }
-  return zbits;
+  return bits;
 }
 
 // XOR function
 string xor_function(string xbits, string ybits){
-  string zbits = "";
+  string bits = "";
   for(int i = 0; i < 32; i++){
     if((xbits.at(i) == '1' && ybits.at(i) == '0') || (xbits.at(i) == '0' && ybits.at(i) == '1'))
-      zbits = zbits + '1';
+      bits = bits + '1';
     else
-      zbits = zbits + '0';
+      bits = bits + '0';
   }
-  return zbits;
+  return bits;
 }
 
 // NOR function
 string nor_function(string xbits, string ybits){
-  string zbits = "";
+  string bits = "";
   for(int i = 0; i < 32; i++){
     if(xbits.at(i) == '0' && ybits.at(i) == '0')
-      zbits = zbits + '1';
+      bits = bits + '1';
     else
-      zbits = zbits + '0';
+      bits = bits + '0';
   }
-  return zbits;
+  return bits;
 }
+
 
 
 int main(int args, char **argv){
@@ -1125,7 +1126,26 @@ int main(int args, char **argv){
           }
 
           instruction = "ANDI R" + to_string(rtReg) + ", R" + to_string(rsReg) + ", #" + to_string(immediate);
-          addto_instruction_disassembly(instruction_disassembly, it, instruction);
+          if(iteration == 1){
+            addto_instruction_disassembly(instruction_disassembly, it, instruction);
+          }
+          else if(iteration == 2){
+            x = stoi(register_values.find(rsReg)->second);
+            xbits = createRegisterBitsString(x);
+            cout << "xbits: " << xbits << "\n";
+            cout << "immediate: " << immediate << "\n";
+            ybits = createRegisterBitsString(immediate);
+            cout << "ybits: " << ybits << "\n";
+            zbits = and_function(xbits, ybits);
+            cout << "zbits: "  << zbits << "\n";
+            z = int_ofbits(zbits);
+            register_values.at(rtReg) = to_string(z);
+            //cout << z;
+            //cout << "x, xbits:" << x << "," << xbits << "|" << xbits.length();
+            //cout << "\ny, ybits:" << y << "," << ybits << "|" << ybits.length();
+            //cout << "\nzbits: " << zbits;
+            cycle++;
+          }
         }
         // ORI Instruction
         if(opcode == "1010"){
