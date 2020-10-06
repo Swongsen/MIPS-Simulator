@@ -7,4 +7,8 @@ Not exactly compatible with MIPS as the instruction set has been modified to fit
 
 This project takes in 32-bit MIPS instructions and produces two text files, simulation.txt and disassembly.txt. <br/>
 1. simulation.txt contains the program trace of the register values and data values throughout the program running.
-2. disassembly.txt contains the translation of the 32 bits into their instruction or data counterparts. 
+2. disassembly.txt contains the translation of the 32 bits into their instruction or data counterparts. <br/><br/>
+
+Run by compiling: g++ -o MIPSsim.o MIPSsim.cpp and then ./MIPSsim.o sample.txt
+
+
